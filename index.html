@@ -191,15 +191,26 @@
             setupLights();
             createTextures();
             createParticles(); 
-            createDust();     
+            createDust();      
             createDefaultPhotos();
             setupPostProcessing();
             setupEvents();
-            await initMediaPipe();
             
+            // --- 修改开始：增加了 try-catch 容错处理 ---
+            try {
+                // 尝试启动摄像头，但如果失败了（比如在台式机上），不要报错卡死
+                await initMediaPipe();
+            } catch (error) {
+                console.log("未检测到摄像头或权限被拒绝，将以纯展示模式运行。");
+            }
+            // --- 修改结束 ---
+            
+            // 强制移除 Loading 画面，无论摄像头是否成功
             const loader = document.getElementById('loader');
-            loader.style.opacity = 0;
-            setTimeout(() => loader.remove(), 800);
+            if (loader) {
+                loader.style.opacity = 0;
+                setTimeout(() => loader.remove(), 800);
+            }
 
             animate();
         }
@@ -519,7 +530,12 @@
         }
 
         // --- MEDIAPIPE ---
-        async function initMediaPipe() {
+          async function initMediaPipe() {
+            // 安全检查：如果浏览器不支持摄像头，直接返回，不再执行后续代码
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return;
+            }
+
             video = document.getElementById('webcam');
             webcamCanvas = document.getElementById('webcam-preview');
             webcamCtx = webcamCanvas.getContext('2d');
@@ -537,13 +553,16 @@
                 numHands: 1
             });
             
-            if (navigator.mediaDevices?.getUserMedia) {
+            try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.addEventListener("loadeddata", predictWebcam);
+            } catch (e) {
+                // 如果用户点了“拒绝访问摄像头”，这里会捕获错误，防止红屏
+                console.log("用户拒绝了摄像头权限");
+                throw e; // 抛出错误让上面的 init() 函数去处理
             }
         }
-
         let lastVideoTime = -1;
         async function predictWebcam() {
             if (video.currentTime !== lastVideoTime) {
