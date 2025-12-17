@@ -43,23 +43,46 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
          /* 新增的公司文字样式 */
+/* --- 公司顶部小标题样式 (金色) --- */
 .company-header {
-    color: #d4af37;             /* 香槟金色 */
-    font-size: 28px;            /* 字体大小 */
+    /* 这种金色 (#ffcc33) 比之前的香槟金更亮，接近您图2的效果 */
+    color: #ffcc33;             
+    font-size: 24px;
     font-weight: bold;
-    font-family: 'Songti SC', 'SimSun', serif; /* 设置中文字体（宋体）更有节日感 */
-    letter-spacing: 8px;        /* 字间距拉大，显得高级 */
-    margin-bottom: 10px;        /* 和下面大标题的距离 */
-    text-shadow: 0 0 20px rgba(212, 175, 55, 0.4); /* 淡淡发光 */
-    opacity: 0;                 /* 初始隐藏 */
-    animation: fadeInMove 2s ease-out forwards;    /* 添加一个优雅的浮现动画 */
-    animation-delay: 0.5s;      /* 稍微晚一点出来 */
+    /* 改用黑体/无衬线字体，显得更现代，匹配图2风格 */
+    font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
+    margin-bottom: 5px;
+    opacity: 0;
+    animation: fadeInMove 2s ease-out forwards;
+    animation-delay: 0.5s;
+    text-shadow: 0 0 10px rgba(255, 204, 51, 0.3); /* 淡淡的金光 */
 }
 
-/* 一个简单的浮现动画定义 */
-@keyframes fadeInMove {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* 专门控制 AILIA 这几个字母的间距 */
+.brand-name {
+    letter-spacing: 3px; /* AILIA 字母之间稍微分开一点，显得大气 */
+    margin-right: 10px;  /* "AILIA" 和 "祝您" 之间留点空隙 */
+    text-transform: uppercase;
+}
+
+/* --- 主标题样式 (米白色) --- */
+h1 {
+    /* 使用米白色/乳白色，看起来柔和高级 */
+    color: #f2eada; 
+    font-size: 60px; /* 字体调大 */
+    margin: 0;
+    font-weight: 500;
+    letter-spacing: 5px;
+    /* 同样改成现代黑体，不要用之前的 Times New Roman 了 */
+    font-family: "Microsoft YaHei", "Heiti SC", sans-serif;
+    
+    /* 稍微加一点文字渐变，让它更有质感（可选） */
+    background: linear-gradient(to bottom, #fff, #e6dcb8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    
+    opacity: 0.9;
+    text-shadow: 0 0 30px rgba(242, 234, 218, 0.4);
 }
         /* Typography - Centerpiece */
         h1 { 
@@ -142,9 +165,11 @@
     <div id="canvas-container"></div>
 
 <div id="ui-layer">
-    <div class="company-header">AILIA 祝您</div>
+    <div class="company-header">
+        <span class="brand-name">AILIA</span> 祝您
+    </div>
 
-    <h1>圣诞节快乐
+    <h1>圣诞节快乐</h1>
     
     <div class="upload-wrapper">
         <label class="upload-btn">
