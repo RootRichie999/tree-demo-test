@@ -42,7 +42,25 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+         /* 新增的公司文字样式 */
+.company-header {
+    color: #d4af37;             /* 香槟金色 */
+    font-size: 28px;            /* 字体大小 */
+    font-weight: bold;
+    font-family: 'Songti SC', 'SimSun', serif; /* 设置中文字体（宋体）更有节日感 */
+    letter-spacing: 8px;        /* 字间距拉大，显得高级 */
+    margin-bottom: 10px;        /* 和下面大标题的距离 */
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.4); /* 淡淡发光 */
+    opacity: 0;                 /* 初始隐藏 */
+    animation: fadeInMove 2s ease-out forwards;    /* 添加一个优雅的浮现动画 */
+    animation-delay: 0.5s;      /* 稍微晚一点出来 */
+}
 
+/* 一个简单的浮现动画定义 */
+@keyframes fadeInMove {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
         /* Typography - Centerpiece */
         h1 { 
             color: #fceea7; font-size: 56px; margin: 0; font-weight: 400; 
@@ -123,17 +141,19 @@
 
     <div id="canvas-container"></div>
 
-    <div id="ui-layer">
-        <h1>Merry Christmas</h1>
-        
-        <div class="upload-wrapper">
-            <label class="upload-btn">
-                Add Memories
-                <input type="file" id="file-input" multiple accept="image/*">
-            </label>
-            <div class="hint-text">Press 'H' to Hide Controls</div>
-        </div>
+<div id="ui-layer">
+    <div class="company-header">AILIA 祝您</div>
+
+    <h1>圣诞节快乐>henh
+    
+    <div class="upload-wrapper">
+        <label class="upload-btn">
+            Add Memories
+            <input type="file" id="file-input" multiple accept="image/*">
+        </label>
+        <div class="hint-text">Press 'H' to Hide Controls</div>
     </div>
+</div>
 
     <!-- Webcam hidden structure -->
     <div id="webcam-wrapper">
