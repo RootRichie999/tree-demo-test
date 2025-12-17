@@ -43,25 +43,28 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
          /* 新增的公司文字样式 */
-/* --- 公司顶部小标题样式 (金色) --- */
+/* --- 公司顶部小标题样式 (金色 - 修复版) --- */
 .company-header {
-    /* 这种金色 (#ffcc33) 比之前的香槟金更亮，接近您图2的效果 */
-    color: #ffcc33;             
-    font-size: 24px;
-    font-weight: bold;
-    /* 改用黑体/无衬线字体，显得更现代，匹配图2风格 */
-    font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
-    margin-bottom: 5px;
-    opacity: 0;
-    animation: fadeInMove 2s ease-out forwards;
-    animation-delay: 0.5s;
+    display: block;             /* 确保它作为块级元素显示 */
+    color: #ffcc33;             /* 金色 */
+    font-size: 24px;            /* 字体大小 */
+    font-weight: bold;          /* 加粗 */
+    font-family: "Microsoft YaHei", "Heiti SC", sans-serif; /* 微软雅黑 */
+    margin-bottom: 10px;        /* 稍微拉开一点和下面标题的距离 */
+    
+    /* 关键修改：去掉 opacity: 0，直接让它显示 */
+    opacity: 1;                 
     text-shadow: 0 0 10px rgba(255, 204, 51, 0.3); /* 淡淡的金光 */
+    
+    /* 确保它在最上层，不会被画布遮挡 */
+    position: relative; 
+    z-index: 20; 
 }
 
-/* 专门控制 AILIA 这几个字母的间距 */
+/* AILIA 字母样式保持不变 */
 .brand-name {
-    letter-spacing: 3px; /* AILIA 字母之间稍微分开一点，显得大气 */
-    margin-right: 10px;  /* "AILIA" 和 "祝您" 之间留点空隙 */
+    letter-spacing: 3px; 
+    margin-right: 10px;  
     text-transform: uppercase;
 }
 
