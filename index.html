@@ -3,17 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Experience Final</title>
+    <title>AILIA Holiday Hierarchy Tree</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* UI Overlay */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-        }
-        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
         .ui-hidden { opacity: 0 !important; pointer-events: none !important; }
 
         /* Loading */
@@ -27,7 +21,7 @@
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Logo & Title --- */
+        /* Logo & Title */
         .company-header {
             position: absolute; top: 5%; width: 100%; text-align: center;
             color: #ffcc33; font-size: 28px; font-weight: bold;          
@@ -46,25 +40,20 @@
             text-transform: uppercase;
         }
 
-        /* --- 左下角控制区域 --- */
+        /* Controls */
         #controls-wrapper {
             position: absolute; bottom: 40px; left: 40px;
             z-index: 20; pointer-events: auto;
             display: flex; flex-direction: column; 
             align-items: flex-start; gap: 15px; 
         }
-        
         .control-item {
             display: flex; align-items: center; gap: 12px;
-            color: #d4af37; cursor: pointer; opacity: 0.6;
-            transition: all 0.3s ease;
-            text-decoration: none;
+            color: #d4af37; cursor: pointer; opacity: 0.6; transition: all 0.3s ease;
         }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
-        
         .icon-box { font-size: 20px; width: 20px; text-align: center; }
         .text-box { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif; }
-
         #file-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
         
@@ -85,7 +74,7 @@
 
     <div id="loader">
         <div class="spinner"></div>
-        <div class="loader-text">Loading Holiday Magic</div>
+        <div class="loader-text">Loading Hierarchy Tree</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -98,7 +87,7 @@
     <div id="controls-wrapper">
         <label class="control-item">
             <span class="icon-box">＋</span>
-            <span class="text-box">Add Memories</span>
+            <span class="text-box">Add More Photos</span>
             <input type="file" id="file-input" multiple accept="image/*">
         </label>
 
@@ -130,10 +119,27 @@
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'; 
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
-        // --- 预设照片列表 (放在这里) ---
-        // 例如: ['photo1.jpg', 'photo2.jpg']
-        const PRELOADED_PHOTOS = []; 
+        // --- 核心配置：照片分层名单 ---
+        // 请将照片和 HTML 放在同一文件夹，并将名字填入下方对应的列表
+        
+        // 1. 第一层：总经理 (最上面，圈子最小)
+        const TIER_1_PHOTOS = [
+            // 'boss.jpg', 
+        ];
 
+        // 2. 第二层：部门主管 (中间，圈子中等)
+        const TIER_2_PHOTOS = [
+            // 'manager1.jpg',
+            // 'manager2.jpg',
+        ];
+
+        // 3. 第三层：普通员工 (最下面，圈子最大，可以放很多)
+        const TIER_3_PHOTOS = [
+            // 'staff1.jpg',
+            // 'staff2.jpg',
+        ];
+
+        // --- CONFIGURATION ---
         const CONFIG = {
             colors: { bg: 0x000000, champagneGold: 0xffd966, deepGreen: 0x03180a, accentRed: 0x990000 },
             particles: { count: 1500, dustCount: 2000, treeHeight: 24, treeRadius: 8 },
@@ -154,15 +160,14 @@
         let musicPlaylist = ["https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg"]; 
         let currentTrackIndex = 0;
 
+        // Music Logic
         window.toggleMusic = function() {
             const audio = document.getElementById('bg-music');
             const status = document.getElementById('music-status');
             if (!audio.src) audio.src = musicPlaylist[0];
             if (audio.paused) {
                 audio.play().then(() => { status.innerText = "Sound On"; status.style.opacity = 1; }).catch(e => console.log(e));
-            } else {
-                audio.pause(); status.innerText = "Sound Off"; status.style.opacity = 0.6;
-            }
+            } else { audio.pause(); status.innerText = "Sound Off"; status.style.opacity = 0.6; }
         };
 
         document.getElementById('music-input').addEventListener('change', (e) => {
@@ -185,10 +190,14 @@
 
         async function init() {
             initThree(); setupEnvironment(); setupLights(); createTextures();
-            createParticles(); createInstancedDust(); createDefaultPhotos();
-            setupPostProcessing(); setupEvents(); loadPreloadedPhotos();
+            createParticles(); createInstancedDust(); 
+            // createDefaultPhotos(); // <--- 已移除默认金牌照片
+            setupPostProcessing(); setupEvents(); 
+            
+            // 加载三层照片
+            loadTierPhotos();
 
-            try { await initMediaPipe(); } catch (error) { console.log("Webcam permission denied."); }
+            try { await initMediaPipe(); } catch (error) { console.log("Webcam denied"); }
             
             const loader = document.getElementById('loader');
             if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
@@ -247,11 +256,16 @@
         }
 
         class Particle {
-            constructor(mesh, type) {
+            constructor(mesh, type, tier = 3) { // 默认为第3层
                 this.mesh = mesh; this.type = type;
+                this.tier = tier; // 记录层级
                 this.posTree = new THREE.Vector3(); this.posScatter = new THREE.Vector3();
                 this.baseScale = mesh.scale.x; 
+                
+                // 为了让照片在同一层内均匀分布，我们需要用 id 计算角度
+                // 但这里简化为随机分布，因为数量不确定。如果照片多，随机分布看起来也很自然。
                 this.angleOffset = Math.random() * Math.PI * 2; 
+                
                 const speedMult = (type === 'PHOTO') ? 0.3 : 2.0;
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
                 this.calculatePositions();
@@ -272,11 +286,33 @@
                 let target = this.posTree;
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // Carousel Logic
-                        const radius = 22; 
-                        const currentAngle = this.angleOffset + STATE.rotation.y; 
-                        target = new THREE.Vector3(Math.sin(currentAngle) * radius, Math.sin(time * 0.5 + this.angleOffset) * 2, Math.cos(currentAngle) * radius);
-                        this.mesh.lookAt(0, 0, 0); this.mesh.rotation.y += Math.PI; 
+                        // --- 阶梯分层旋转逻辑 ---
+                        let radius = 25; // 默认底层半径
+                        let heightY = -8; // 默认底层高度
+                        
+                        if (this.tier === 1) { // 总经理
+                            radius = 10; 
+                            heightY = 10;
+                        } else if (this.tier === 2) { // 主管
+                            radius = 18;
+                            heightY = 1;
+                        } else { // 员工 (tier 3)
+                            radius = 26;
+                            heightY = -10;
+                        }
+
+                        // 每一层的旋转速度稍微错开一点，更有层次感
+                        const speed = 0.2 + (this.tier * 0.05); 
+                        const currentAngle = this.angleOffset + STATE.rotation.y; // 加上手势旋转
+                        
+                        target = new THREE.Vector3(
+                            Math.sin(currentAngle) * radius,
+                            heightY + Math.sin(time * 0.5 + this.angleOffset), // 轻微上下浮动
+                            Math.cos(currentAngle) * radius
+                        );
+                        
+                        this.mesh.lookAt(0, heightY, 0); // 朝向中心轴
+                        this.mesh.rotation.y += Math.PI; 
                     } else { target = this.posScatter; }
                 } 
 
@@ -312,23 +348,13 @@
                 else if (rand < 0.97) { mesh = new THREE.Mesh(sphereGeo, redMat); type = 'RED'; } 
                 else { mesh = new THREE.Mesh(candyGeo, candyMat); type = 'CANE'; }
                 const s = 0.4 + Math.random() * 0.5; mesh.scale.set(s,s,s); mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
-                mainGroup.add(mesh); particleSystem.push(new Particle(mesh, type));
+                mainGroup.add(mesh); particleSystem.push(new Particle(mesh, type, 3)); // 普通粒子默认为层级3
             }
             const starGeo = new THREE.OctahedronGeometry(1.2, 0); const starMat = new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.0, metalness: 1.0, roughness: 0 });
             const star = new THREE.Mesh(starGeo, starMat); star.position.set(0, CONFIG.particles.treeHeight/2 + 1.2, 0); mainGroup.add(star); mainGroup.add(photoMeshGroup);
         }
 
-        function createDefaultPhotos() {
-            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d'); ctx.fillStyle = '#050505'; ctx.fillRect(0,0,512,512);
-            ctx.strokeStyle = '#eebb66'; ctx.lineWidth = 15; ctx.strokeRect(20,20,472,472);
-            ctx.font = '500 60px "Cinzel"'; ctx.fillStyle = '#eebb66'; ctx.textAlign = 'center'; 
-            ctx.fillText("JOYEUX", 256, 230); ctx.fillText("NOEL", 256, 300);
-            const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(tex);
-        }
-
-        function addPhotoToScene(texture) {
-            // --- 核心优化：修复高清图模糊/闪烁 ---
+        function addPhotoToScene(texture, tier = 3) {
             const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
             texture.anisotropy = maxAnisotropy;
             texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -340,7 +366,10 @@
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshBasicMaterial({ map: texture });
             const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
-            const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); particleSystem.push(new Particle(group, 'PHOTO'));
+            const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
+            
+            // 传入 tier 参数
+            particleSystem.push(new Particle(group, 'PHOTO', tier));
         }
         
         function handleImageUpload(e) {
@@ -348,16 +377,27 @@
             toggleMusic();
             Array.from(files).forEach(f => {
                 const reader = new FileReader();
-                reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t); }); }
+                reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { 
+                    t.colorSpace = THREE.SRGBColorSpace; 
+                    addPhotoToScene(t, 3); // 手动上传的默认放到第3层（员工层）
+                }); }
                 reader.readAsDataURL(f);
             });
         }
         
-        function loadPreloadedPhotos() {
-            if (!PRELOADED_PHOTOS || PRELOADED_PHOTOS.length === 0) return;
+        function loadTierPhotos() {
             const loader = new THREE.TextureLoader();
-            PRELOADED_PHOTOS.forEach(path => {
-                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture); }, undefined, (err) => { console.warn(`Error loading ${path}`, err); });
+            // Load Tier 1
+            TIER_1_PHOTOS.forEach(path => {
+                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture, 1); });
+            });
+            // Load Tier 2
+            TIER_2_PHOTOS.forEach(path => {
+                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture, 2); });
+            });
+            // Load Tier 3
+            TIER_3_PHOTOS.forEach(path => {
+                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture, 3); });
             });
         }
 
@@ -375,10 +415,8 @@
             if (result.landmarks && result.landmarks.length > 0) {
                 STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
                 if(controls) controls.autoRotate = false; 
-                
                 const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; 
                 let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
-
                 if (avgDist > 0.4) { STATE.mode = 'SCATTER'; } 
                 else if (avgDist < 0.25) { STATE.mode = 'TREE'; }
             } else { 
