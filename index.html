@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Fix v12</title>
+    <title>AILIA Holiday Final Ultra Smooth v13</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -148,6 +148,7 @@
         let musicPlaylist = ["https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg"]; 
         let currentTrackIndex = 0;
 
+        // Music Logic
         window.toggleMusic = function() {
             const audio = document.getElementById('bg-music');
             const status = document.getElementById('music-status');
@@ -289,6 +290,8 @@
                 this.calculatePositions();
                 this.isDissolving = false; 
                 this.randomOffset = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6);
+                const speedMult = (type === 'PHOTO') ? 0.2 : 2.0; // 照片自转速度降低
+                this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
             }
 
             calculatePositions() {
@@ -313,22 +316,17 @@
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
                         if (this.isBoss) {
-                            // --- 核心修正：Boss 放在更高的地方 (17.5) ---
-                            // 圣诞树顶的星星大约在 Y=13.2，所以 17.5 绝对安全
+                            // --- 核心修正：Boss 高度提升到 19.0 ---
                             const bossAngle = STATE.rotation.y;
-                            target = new THREE.Vector3(
-                                Math.sin(bossAngle) * 5, // 半径小一点
-                                17.5 + Math.sin(time) * 0.5, // 悬浮高度 17.5
-                                Math.cos(bossAngle) * 5
-                            );
-                            this.mesh.lookAt(0, 17.5, 0); 
+                            target = new THREE.Vector3(Math.sin(bossAngle) * 5, 19.0 + Math.sin(time) * 0.5, Math.cos(bossAngle) * 5);
+                            this.mesh.lookAt(0, 19.0, 0); 
                             this.mesh.rotation.y += Math.PI; 
                         } else {
-                            // --- 团队：从 11 开始往下，避开 12-14 的星星区域 ---
                             const totalPhotos = photoList.length;
                             let progress = 0;
                             if(totalPhotos > 1) {
                                 let teamIdx = 0;
+                                // 重新查找当前在列表中的位置（因为列表会被洗牌）
                                 for(let i=0; i<totalPhotos; i++) {
                                     if(photoList[i] === this) break;
                                     if(!photoList[i].isBoss) teamIdx++;
@@ -337,7 +335,6 @@
                                 progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
 
-                            // 高度：从 11 到 -15 (避开了上面的星星)
                             const baseH = 11 - progress * 26; 
                             const baseR = 12 + progress * 18;
                             const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
@@ -348,38 +345,32 @@
 
                             const spread = 1.0 + progress * 1.5;
 
-                            target = new THREE.Vector3(
-                                idealX + this.randomOffset.x * spread,
-                                idealY + this.randomOffset.y, 
-                                idealZ + this.randomOffset.z * spread
-                            );
-
+                            target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
                             this.mesh.lookAt(0, idealY, 0); 
                             this.mesh.rotation.y += Math.PI; 
                         }
                     } else { target = this.posScatter; }
                 } 
 
-                const lerpSpeed = 2.0; this.mesh.position.lerp(target, lerpSpeed * dt);
+                // --- 核心优化：丝滑度调整 (从2.0降到0.8) ---
+                const lerpSpeed = 0.8; 
+                this.mesh.position.lerp(target, lerpSpeed * dt);
                 
                 if (mode === 'SCATTER' && this.type !== 'PHOTO') {
-                    this.mesh.rotation.x += 1.0 * dt; this.mesh.rotation.y += 1.0 * dt;
+                    this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt;
                 } else if (mode === 'TREE') {
-                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*2);
-                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*2);
-                    if(this.type === 'PHOTO') {
-                         this.mesh.rotation.y = mainGroup.rotation.y;
-                    } else {
-                         this.mesh.rotation.y += 0.5 * dt; 
-                    }
+                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*lerpSpeed);
+                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*lerpSpeed);
+                    if(this.type === 'PHOTO') { this.mesh.rotation.y = mainGroup.rotation.y; } 
+                    else { this.mesh.rotation.y += 0.5 * dt; }
                 }
 
                 let s = this.baseScale;
                 if (this.type === 'PHOTO' && mode === 'SCATTER') {
-                    if (this.isBoss) s = this.baseScale * 6.0; // 老板照片再大一点
-                    else s = this.baseScale * 4.0;
+                    if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0;
                 }
-                this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
+                // 缩放也同步变丝滑
+                this.mesh.scale.lerp(new THREE.Vector3(s,s,s), lerpSpeed * 2 * dt);
             }
         }
 
@@ -408,26 +399,55 @@
 
         function addPhotoToScene(texture, isBoss) {
             const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true;
-            const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
+            
+            // --- 核心修改：红金相框混搭 ---
+            const isRedFrame = !isBoss && Math.random() > 0.7; // 30% 概率红框（老板除外）
+            let frameMat;
+            if (isRedFrame) {
+                frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.4 });
+            } else {
+                frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
+            }
+            const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05);
             const frame = new THREE.Mesh(frameGeo, frameMat);
-            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshBasicMaterial({ map: texture });
+
+            // --- 核心修改：修复白底照片曝光 (使用 StandardMaterial 并增加粗糙度) ---
+            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); 
+            const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }); 
             const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
+            
             const group = new THREE.Group(); group.add(frame); group.add(photo);
             const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
             
             let photoIdx;
-            if (isBoss) {
-                photoIdx = 0;
-                photoList.forEach(p => p.photoIdx++);
-            } else {
-                photoIdx = photoList.length;
-            }
+            if (isBoss) { photoIdx = 0; } else { photoIdx = photoList.length; }
             
             const particle = new Particle(group, 'PHOTO', photoIdx, isBoss);
             if (isBoss) photoList.unshift(particle); else photoList.push(particle);
             particleSystem.push(particle);
         }
         
+        // --- 新增：随机洗牌函数 ---
+        function shuffleTeamPhotos() {
+            if (photoList.length <= 2) return; // 照片太少不用洗
+            
+            const boss = photoList[0].isBoss ? photoList[0] : null;
+            let team = photoList[0].isBoss ? photoList.slice(1) : [...photoList];
+            
+            // Fisher-Yates 洗牌算法
+            for (let i = team.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [team[i], team[j]] = [team[j], team[i]];
+            }
+            
+            // 重新组合
+            if (boss) {
+                photoList = [boss, ...team];
+            } else {
+                photoList = team;
+            }
+        }
+
         async function initMediaPipe() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
             video = document.getElementById('webcam'); webcamCanvas = document.getElementById('webcam-preview'); webcamCtx = webcamCanvas.getContext('2d'); webcamCanvas.width = 160; webcamCanvas.height = 120;
@@ -447,12 +467,11 @@
                 
                 if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
                     STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; 
+                    // --- 核心功能：每次炸开前洗牌 ---
+                    shuffleTeamPhotos();
                 } else if (avgDist < 0.25 && STATE.mode !== 'TREE') {
                     STATE.lastMode = STATE.mode; STATE.mode = 'TREE';
-                    photoList.forEach(p => {
-                        triggerDissolve(p.mesh.position.clone()); 
-                        p.isDissolving = true; 
-                    });
+                    photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; });
                 }
             } else { 
                 STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
@@ -488,14 +507,8 @@
             dissolveParticles.forEach(p => {
                 if(p.life > 0) {
                     p.mesh.position.add(p.velocity.clone().multiplyScalar(dt)); 
-                    p.velocity.y += dt * 2; 
-                    p.life -= dt * 1.5; 
-                    p.mesh.material.opacity = p.life; 
-                    p.mesh.scale.setScalar(p.life * 1.5); 
-                    p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; 
-                } else {
-                    p.mesh.visible = false;
-                }
+                    p.velocity.y += dt * 2; p.life -= dt * 1.5; p.mesh.material.opacity = p.life; p.mesh.scale.setScalar(p.life * 1.5); p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; 
+                } else { p.mesh.visible = false; }
             });
 
             composer.render();
