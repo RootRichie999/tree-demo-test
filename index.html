@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Experience v6</title>
+    <title>AILIA Holiday Experience Final</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -46,12 +46,12 @@
             text-transform: uppercase;
         }
 
-        /* --- 左下角控制区域 (统一风格) --- */
+        /* --- 左下角控制区域 --- */
         #controls-wrapper {
             position: absolute; bottom: 40px; left: 40px;
             z-index: 20; pointer-events: auto;
             display: flex; flex-direction: column; 
-            align-items: flex-start; gap: 15px; /* 按钮之间的间距 */
+            align-items: flex-start; gap: 15px; 
         }
         
         .control-item {
@@ -96,7 +96,6 @@
     </div>
 
     <div id="controls-wrapper">
-        
         <label class="control-item">
             <span class="icon-box">＋</span>
             <span class="text-box">Add Memories</span>
@@ -113,7 +112,6 @@
             <span class="icon-box">♪</span>
             <span class="text-box" id="music-status">Play Music</span>
         </div>
-
     </div>
 
     <audio id="bg-music"></audio>
@@ -132,7 +130,8 @@
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'; 
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
-        // 依然保留预设功能，以防万一您需要
+        // --- 预设照片列表 (放在这里) ---
+        // 例如: ['photo1.jpg', 'photo2.jpg']
         const PRELOADED_PHOTOS = []; 
 
         const CONFIG = {
@@ -252,9 +251,7 @@
                 this.mesh = mesh; this.type = type;
                 this.posTree = new THREE.Vector3(); this.posScatter = new THREE.Vector3();
                 this.baseScale = mesh.scale.x; 
-                // 给每个照片分配一个唯一的随机偏移，用于排列
                 this.angleOffset = Math.random() * Math.PI * 2; 
-                
                 const speedMult = (type === 'PHOTO') ? 0.3 : 2.0;
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
                 this.calculatePositions();
@@ -273,32 +270,17 @@
 
             update(dt, mode, time) {
                 let target = this.posTree;
-                
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // --- 旋转木马核心逻辑 ---
-                        const radius = 22; // 照片环半径
-                        // 关键：位置由 初始偏移 + 全局旋转(STATE.rotation.y) 决定
-                        // 这样手势控制 STATE.rotation.y 时，照片就会跟着转
+                        // Carousel Logic
+                        const radius = 22; 
                         const currentAngle = this.angleOffset + STATE.rotation.y; 
-                        
-                        target = new THREE.Vector3(
-                            Math.sin(currentAngle) * radius,
-                            Math.sin(time * 0.5 + this.angleOffset) * 2, // 轻微上下浮动
-                            Math.cos(currentAngle) * radius
-                        );
-                        
-                        // 让照片永远面向圆心，或者稍微偏一点
-                        this.mesh.lookAt(0, 0, 0);
-                        this.mesh.rotation.y += Math.PI; // 修正朝向
-                    } else { 
-                        target = this.posScatter; 
-                    }
+                        target = new THREE.Vector3(Math.sin(currentAngle) * radius, Math.sin(time * 0.5 + this.angleOffset) * 2, Math.cos(currentAngle) * radius);
+                        this.mesh.lookAt(0, 0, 0); this.mesh.rotation.y += Math.PI; 
+                    } else { target = this.posScatter; }
                 } 
 
-                const lerpSpeed = 2.0; 
-                this.mesh.position.lerp(target, lerpSpeed * dt);
-
+                const lerpSpeed = 2.0; this.mesh.position.lerp(target, lerpSpeed * dt);
                 if (mode === 'SCATTER' && this.type !== 'PHOTO') {
                     this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt;
                 } else if (mode === 'TREE') {
@@ -308,10 +290,7 @@
                 }
 
                 let s = this.baseScale;
-                if (this.type === 'PHOTO') {
-                    // 散开时照片放大 4 倍
-                    if (mode === 'SCATTER') s = this.baseScale * 4.0;
-                }
+                if (this.type === 'PHOTO' && mode === 'SCATTER') s = this.baseScale * 4.0;
                 this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
             }
         }
@@ -349,6 +328,13 @@
         }
 
         function addPhotoToScene(texture) {
+            // --- 核心优化：修复高清图模糊/闪烁 ---
+            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+            texture.anisotropy = maxAnisotropy;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = true;
+
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
             const frame = new THREE.Mesh(frameGeo, frameMat);
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshBasicMaterial({ map: texture });
@@ -371,11 +357,10 @@
             if (!PRELOADED_PHOTOS || PRELOADED_PHOTOS.length === 0) return;
             const loader = new THREE.TextureLoader();
             PRELOADED_PHOTOS.forEach(path => {
-                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture); });
+                loader.load(path, (texture) => { texture.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(texture); }, undefined, (err) => { console.warn(`Error loading ${path}`, err); });
             });
         }
 
-        // --- MEDIAPIPE (已移除捏合放大的逻辑) ---
         async function initMediaPipe() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
             video = document.getElementById('webcam'); webcamCanvas = document.getElementById('webcam-preview'); webcamCtx = webcamCanvas.getContext('2d'); webcamCanvas.width = 160; webcamCanvas.height = 120;
@@ -389,24 +374,15 @@
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
                 STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
-                if(controls) controls.autoRotate = false; // 手势接管旋转
+                if(controls) controls.autoRotate = false; 
                 
-                // 计算张开手的程度
-                const wrist = lm[0]; 
-                const tips = [lm[8], lm[12], lm[16], lm[20]]; 
-                let avgDist = 0; 
-                tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); 
-                avgDist /= 4;
+                const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; 
+                let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
 
-                // 简单的判定：手张得很开 -> 炸开(Scatter)；手握拳/放松 -> 变回树(Tree)
-                if (avgDist > 0.4) {
-                    STATE.mode = 'SCATTER'; 
-                } else if (avgDist < 0.25) {
-                    STATE.mode = 'TREE';
-                }
+                if (avgDist > 0.4) { STATE.mode = 'SCATTER'; } 
+                else if (avgDist < 0.25) { STATE.mode = 'TREE'; }
             } else { 
-                STATE.hand.detected = false; 
-                if(controls) controls.autoRotate = true; // 恢复自动旋转
+                STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
             }
         }
 
@@ -420,18 +396,11 @@
             requestAnimationFrame(animate); const dt = clock.getDelta(); const time = clock.elapsedTime;
             if(controls) controls.update(); 
 
-            // 手势旋转逻辑：直接映射到 rotation.y
             if (STATE.hand.detected) {
-                // 手往右移，树/照片就往右转
                 const targetRotY = STATE.hand.x * Math.PI; 
                 STATE.rotation.y += (targetRotY - STATE.rotation.y) * 2.0 * dt;
-                
                 mainGroup.rotation.y = STATE.rotation.y;
-                // 不需要动 X 轴了，保持水平旋转更稳
-            } else {
-                // 自动旋转时，更新 STATE.rotation.y 以便平滑过渡
-                STATE.rotation.y = mainGroup.rotation.y;
-            }
+            } else { STATE.rotation.y = mainGroup.rotation.y; }
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, time));
             
