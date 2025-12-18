@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Deluxe v10</title>
+    <title>AILIA Holiday Final Perfect v11</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -133,7 +133,7 @@
         };
 
         const STATE = {
-            mode: 'TREE', lastMode: 'TREE', // 增加 lastMode 记录上一次状态
+            mode: 'TREE', lastMode: 'TREE',
             hand: { detected: false, x: 0, y: 0 },
             rotation: { x: 0, y: 0 }, time: 0
         };
@@ -141,11 +141,9 @@
         let scene, camera, renderer, composer, controls;
         let mainGroup, clock = new THREE.Clock();
         let particleSystem = [], dustSystem, photoMeshGroup = new THREE.Group();
-        // 新增：溶解粒子系统
         let dissolveParticles = [], dissolveGeo, dissolveMat;
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture; 
-        // 新增：照片计数和列表，用于有序排列
-        let photoCount = 0;
+        // 照片列表，用于排序
         let photoList = [];
         
         let musicPlaylist = ["https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg"]; 
@@ -179,7 +177,7 @@
             audio.src = musicPlaylist[currentTrackIndex]; audio.play();
         });
 
-        // 1. 处理总经理上传 (Tier 1 - 插队到最前面)
+        // 1. 处理总经理上传 (插队到最前面)
         document.getElementById('boss-input').addEventListener('change', (e) => {
             const files = e.target.files; if(!files.length) return;
             toggleMusic(); 
@@ -191,7 +189,7 @@
             e.target.value = '';
         });
 
-        // 2. 处理团队上传 (Tier 2 - 追加到后面)
+        // 2. 处理团队上传 (追加到后面)
         document.getElementById('team-input').addEventListener('change', (e) => {
             const files = e.target.files; if(!files.length) return;
             toggleMusic();
@@ -205,7 +203,7 @@
 
         async function init() {
             initThree(); setupEnvironment(); setupLights(); createTextures();
-            createParticles(); createInstancedDust(); createDissolveSystem(); // 初始化溶解系统
+            createParticles(); createInstancedDust(); createDissolveSystem();
             setupPostProcessing(); setupEvents(); 
             try { await initMediaPipe(); } catch (error) { console.log("Webcam denied"); }
             const loader = document.getElementById('loader'); if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
@@ -250,43 +248,23 @@
             caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3);
         }
 
-        // --- 新增：金色溶解粒子系统 ---
         function createDissolveSystem() {
             dissolveGeo = new THREE.PlaneGeometry(0.3, 0.3);
-            dissolveMat = new THREE.MeshBasicMaterial({
-                color: CONFIG.colors.champagneGold,
-                transparent: true,
-                opacity: 0, // 初始不可见
-                blending: THREE.AdditiveBlending, // 发光效果
-                side: THREE.DoubleSide
-            });
-            // 预创建一些粒子池
+            dissolveMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.champagneGold, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
             for(let i=0; i<300; i++) {
                 const p = new THREE.Mesh(dissolveGeo, dissolveMat.clone());
-                p.visible = false;
-                mainGroup.add(p);
-                dissolveParticles.push({ mesh: p, life: 0, velocity: new THREE.Vector3() });
+                p.visible = false; mainGroup.add(p); dissolveParticles.push({ mesh: p, life: 0, velocity: new THREE.Vector3() });
             }
         }
 
-        // --- 新增：触发溶解效果 ---
         function triggerDissolve(position) {
             let count = 0;
             for(let i=0; i<dissolveParticles.length; i++) {
-                if(count >= 15) break; // 每个照片触发15个粒子
+                if(count >= 15) break; 
                 const p = dissolveParticles[i];
-                if(p.life <= 0) { // 找到空闲粒子
-                    p.mesh.visible = true;
-                    p.mesh.position.copy(position);
-                    p.mesh.scale.setScalar(1);
-                    p.mesh.material.opacity = 1;
-                    p.life = 1.0; // 生命值
-                    // 向上随机喷射速度
-                    p.velocity.set(
-                        (Math.random() - 0.5) * 2, 
-                        Math.random() * 3 + 1, 
-                        (Math.random() - 0.5) * 2
-                    );
+                if(p.life <= 0) { 
+                    p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; 
+                    p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2);
                     count++;
                 }
             }
@@ -308,12 +286,18 @@
         class Particle {
             constructor(mesh, type, photoIdx = -1, isBoss = false) { 
                 this.mesh = mesh; this.type = type;
-                this.photoIdx = photoIdx; // 照片的序号
-                this.isBoss = isBoss; // 是否是老板
+                this.photoIdx = photoIdx; 
+                this.isBoss = isBoss; 
                 this.posTree = new THREE.Vector3(); this.posScatter = new THREE.Vector3();
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions();
-                this.isDissolving = false; // 是否正在溶解
+                this.isDissolving = false; 
+                // --- 关键：给每个照片一个永久的随机偏移量，实现“随意炸开” ---
+                this.randomOffset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 6, // X轴左右随机
+                    (Math.random() - 0.5) * 3, // Y轴上下轻微随机
+                    (Math.random() - 0.5) * 6  // Z轴前后随机
+                );
             }
 
             calculatePositions() {
@@ -328,61 +312,69 @@
             }
 
             update(dt, mode, time) {
-                // 如果正在溶解，快速缩小并停止其他更新
                 if (this.isDissolving) {
                     this.mesh.scale.lerp(new THREE.Vector3(0,0,0), 10*dt);
-                    if(this.mesh.scale.x < 0.01) this.isDissolving = false; // 溶解完毕
+                    if(this.mesh.scale.x < 0.01) this.isDissolving = false; 
                     return;
                 }
 
                 let target = this.posTree;
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // --- 核心修改：螺旋阶梯排列 ---
-                        const total = photoList.length;
-                        let idx = this.photoIdx;
+                        // --- 核心修改：基于噪点的螺旋排列 ---
                         
-                        let heightY, radius, angle;
-
-                        if (this.isBoss) {
-                            // 老板：独占最高点，小圈
-                            heightY = 14; radius = 8; angle = STATE.rotation.y;
-                        } else {
-                            // 团队：螺旋向下排列
-                            // 计算在团队中的相对位置 (去掉老板的偏移)
-                            const teamIdx = idx - (photoList[0].isBoss ? 1 : 0); 
-                            const teamTotal = total - (photoList[0].isBoss ? 1 : 0);
-                            // 高度范围从 10 到 -12
-                            const heightRange = 22; 
-                            const step = heightRange / (teamTotal > 1 ? teamTotal - 1 : 1);
-                            heightY = 10 - teamIdx * step;
-                            
-                            // 半径随高度变化，形成锥形螺旋
-                            const t = (heightY + 12) / 22; // 归一化高度
-                            radius = 15 + (1-t) * 15; // 上面窄(15)，下面宽(30)
-
-                            // 角度螺旋递增
-                            const angleStep = Math.PI * 0.4; // 每个照片间隔的角度
-                            angle = teamIdx * angleStep + STATE.rotation.y;
+                        const totalPhotos = photoList.length;
+                        // 计算归一化进度 (0.0 到 1.0)，老板永远是 0
+                        let progress = 0;
+                        if(totalPhotos > 1 && !this.isBoss) {
+                            // 找到自己在 team 中的位置
+                            let teamIdx = 0;
+                            for(let i=0; i<totalPhotos; i++) {
+                                if(photoList[i] === this) break;
+                                if(!photoList[i].isBoss) teamIdx++;
+                            }
+                             // 简单处理：基于全局索引计算进度
+                             progress = this.photoIdx / (totalPhotos - 1);
+                        } else if (totalPhotos === 1 && !this.isBoss) {
+                            progress = 0.5; // 只有一张团队照片时放中间
                         }
 
-                        target = new THREE.Vector3(Math.sin(angle) * radius, heightY, Math.cos(angle) * radius);
-                        this.mesh.lookAt(0, heightY, 0); this.mesh.rotation.y += Math.PI; 
+                        // 1. 计算理想的螺旋基准线 (宏观有序)
+                        // 高度：从上(+12) 到 下(-14)
+                        const baseH = 12 - progress * 26; 
+                        // 半径：上面窄(10)，下面宽(28)
+                        const baseR = 10 + progress * 18;
+                        // 角度：总共旋转约 3 圈 (进度的3倍 * 2PI) + 手势旋转
+                        const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+
+                        const idealX = Math.sin(baseAngle) * baseR;
+                        const idealZ = Math.cos(baseAngle) * baseR;
+                        const idealY = baseH;
+
+                        // 2. 加上随机偏移 (微观随意)
+                        // 越往下，随机扩散的范围越大 (progress * 1.5 + 1)
+                        const spread = 1.0 + progress * 1.5;
+
+                        target = new THREE.Vector3(
+                            idealX + this.randomOffset.x * spread,
+                            idealY + this.randomOffset.y, // 高度随机性小一点
+                            idealZ + this.randomOffset.z * spread
+                        );
+
+                        // 让照片面向中心轴，然后翻转朝外
+                        this.mesh.lookAt(0, idealY, 0); 
+                        this.mesh.rotation.y += Math.PI; 
 
                     } else { target = this.posScatter; }
                 } 
 
                 const lerpSpeed = 2.0; this.mesh.position.lerp(target, lerpSpeed * dt);
                 
-                // 旋转逻辑
                 if (mode === 'SCATTER' && this.type !== 'PHOTO') {
-                    // 普通粒子继续自转
                     this.mesh.rotation.x += 1.0 * dt; this.mesh.rotation.y += 1.0 * dt;
                 } else if (mode === 'TREE') {
-                     // 回到树时复位旋转
                     this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*2);
                     this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*2);
-                    // 照片回到树里后，跟着主干一起转
                     if(this.type === 'PHOTO') {
                          this.mesh.rotation.y = mainGroup.rotation.y;
                     } else {
@@ -428,15 +420,11 @@
             const group = new THREE.Group(); group.add(frame); group.add(photo);
             const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
             
-            // 维护照片列表，确保顺序
             let photoIdx;
             if (isBoss) {
-                // 老板插队到第一个
                 photoIdx = 0;
-                // 重新调整现有照片的序号
                 photoList.forEach(p => p.photoIdx++);
             } else {
-                // 团队成员追加到最后
                 photoIdx = photoList.length;
             }
             
@@ -462,15 +450,13 @@
                 const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; 
                 let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
                 
-                // 状态切换检测
                 if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
                     STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; 
                 } else if (avgDist < 0.25 && STATE.mode !== 'TREE') {
                     STATE.lastMode = STATE.mode; STATE.mode = 'TREE';
-                    // --- 触发金色裂变溶解效果 ---
                     photoList.forEach(p => {
-                        triggerDissolve(p.mesh.position.clone()); // 在照片当前位置触发粒子
-                        p.isDissolving = true; // 标记照片开始快速缩小
+                        triggerDissolve(p.mesh.position.clone()); 
+                        p.isDissolving = true; 
                     });
                 }
             } else { 
@@ -495,7 +481,6 @@
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, time));
             
-            // 更新背景尘埃
             if (dustSystem) {
                 const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds;
                 for(let i=0; i<count; i++) {
@@ -505,15 +490,14 @@
                 } dustSystem.instanceMatrix.needsUpdate = true;
             }
             
-            // --- 更新金色溶解粒子 ---
             dissolveParticles.forEach(p => {
                 if(p.life > 0) {
-                    p.mesh.position.add(p.velocity.clone().multiplyScalar(dt)); // 向上运动
-                    p.velocity.y += dt * 2; // 加速向上
-                    p.life -= dt * 1.5; // 生命值衰减
-                    p.mesh.material.opacity = p.life; // 淡出
-                    p.mesh.scale.setScalar(p.life * 1.5); // 变小
-                    p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; // 旋转
+                    p.mesh.position.add(p.velocity.clone().multiplyScalar(dt)); 
+                    p.velocity.y += dt * 2; 
+                    p.life -= dt * 1.5; 
+                    p.mesh.material.opacity = p.life; 
+                    p.mesh.scale.setScalar(p.life * 1.5); 
+                    p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; 
                 } else {
                     p.mesh.visible = false;
                 }
