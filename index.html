@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Smart Display v16</title>
+    <title>AILIA Smart Display v17 with Santa</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -23,7 +23,6 @@
         .text-box { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif; }
         .boss-btn { color: #ffcc33; opacity: 0.9; }
         
-        /* 状态提示 */
         #status-indicator {
             position: absolute; bottom: 40px; right: 40px; 
             color: rgba(255, 255, 255, 0.2); font-size: 10px; letter-spacing: 1px;
@@ -32,6 +31,57 @@
 
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
+        
+        /* --- 新增：圣诞老人 UI 样式 --- */
+        #santa-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 30; /* 在控制按钮之上 */
+            pointer-events: none;
+            width: 150px; /* 根据您的图片调整大小 */
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        
+        #santa-actor {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
+            transition: all 0.5s ease;
+        }
+
+        /* Zzz 动画容器 */
+        #zzz-container {
+            position: absolute;
+            top: 0;
+            right: 20%;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
+        }
+
+        /* 单个 Z 的动画 */
+        .zzz-particle {
+            position: absolute;
+            color: #fff;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-weight: bold;
+            opacity: 0;
+            text-shadow: 0 0 5px #000;
+            animation: floatZzz 2.5s linear forwards;
+        }
+
+        @keyframes floatZzz {
+            0% { opacity: 0; transform: translateY(20px) translateX(0) scale(0.5); }
+            20% { opacity: 0.9; }
+            80% { opacity: 0.5; }
+            100% { opacity: 0; transform: translateY(-60px) translateX(30px) scale(1.5); }
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
     </style>
     <script type="importmap">
@@ -43,8 +93,12 @@
     <div id="canvas-container"></div>
     <div id="ui-layer"><div class="company-header">AILIA</div><h1>Merry Christmas</h1></div>
     
-    <div id="controls-wrapper">
-        <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
+    <div id="santa-container">
+        <div id="zzz-container"></div>
+        <img id="santa-actor" src="https://cdn-icons-png.flaticon.com/512/3666/3666245.png" alt="Santa">
+    </div>
+
+    <div id="controls-wrapper" style="left: 180px;"> <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
         <label class="control-item"><span class="icon-box">＋</span><span class="text-box">Add Team Photos</span><input type="file" id="team-input" multiple accept="image/*"></label>
         <label class="control-item"><span class="icon-box">♫</span><span class="text-box">Upload Music</span><input type="file" id="music-input" multiple accept="audio/*"></label>
         <div class="control-item" onclick="toggleMusic()"><span class="icon-box">♪</span><span class="text-box" id="music-status">No Music</span></div>
@@ -70,26 +124,70 @@
             mode: 'TREE', lastMode: 'TREE', 
             hand: { detected: false, x: 0, y: 0 }, 
             rotation: { x: 0, y: 0 }, time: 0,
-            lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0
+            lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0,
+            santaState: 'sleeping' // 新增：记录圣诞老人状态
         };
 
         // --- ⚠️ 闲置检测时间设置 ---
-        // 测试用 10000 (10秒)。正式使用请改为 180000 (3分钟)。
-        const IDLE_THRESHOLD = 10000; 
+        // 测试用 8000 (8秒)。正式使用请改为 180000 (3分钟)。
+        const IDLE_THRESHOLD = 8000; 
+
+        // --- ⚠️⚠️⚠️ 请替换为您自己的圣诞老人图片链接 ⚠️⚠️⚠️ ---
+        // 1. 跳舞的 GIF (透明底最好)
+        const SANTA_DANCE_URL = "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGIwZGI4ZGI4ZGI4ZGI4ZGI4ZGI4ZGI4ZGI4ZGI4ZGI&rid=giphy.gif&ct=s"; 
+        // 2. 睡觉的静态图 (透明底最好)
+        const SANTA_SLEEP_URL = "https://cdn-icons-png.flaticon.com/512/3666/3666245.png";
 
         let scene, camera, renderer, composer, controls, mainGroup, clock = new THREE.Clock();
         let particleSystem = [], dustSystem, snowSystem, photoMeshGroup = new THREE.Group();
         let dissolveParticles = [], dissolveGeo, dissolveMat;
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture; 
-        let photoList = [], musicPlaylist = [], currentTrackIndex = 0; // 默认音乐为空
+        let photoList = [], musicPlaylist = [], currentTrackIndex = 0;
+        
+        // 新增：圣诞老人相关变量
+        const santaActor = document.getElementById('santa-actor');
+        const zzzContainer = document.getElementById('zzz-container');
+        let zzzInterval = null;
 
-        // Music Logic - Updated
+        // --- 新增：控制圣诞老人的函数 ---
+        function setSantaState(state) {
+            if (STATE.santaState === state) return; // 状态没变就不操作
+            STATE.santaState = state;
+
+            if (state === 'dancing') {
+                // 切换到跳舞 GIF
+                santaActor.src = SANTA_DANCE_URL;
+                santaActor.style.transform = "scale(1.2)"; // 稍微放大一点表示兴奋
+                // 停止 Zzz
+                if (zzzInterval) clearInterval(zzzInterval);
+                zzzContainer.innerHTML = '';
+            } else {
+                // 切换到睡觉图
+                santaActor.src = SANTA_SLEEP_URL;
+                santaActor.style.transform = "scale(1.0) rotate(-5deg)"; // 稍微歪一点表示睡着了
+                // 开始 Zzz
+                zzzInterval = setInterval(spawnZzz, 1000);
+                spawnZzz(); // 立即生成一个
+            }
+        }
+
+        // --- 新增：生成 Zzz 气泡 ---
+        function spawnZzz() {
+            const z = document.createElement('div');
+            z.className = 'zzz-particle';
+            z.innerText = Math.random() > 0.5 ? 'Z' : 'z'; // 随机大小 Z
+            z.style.fontSize = (14 + Math.random() * 10) + 'px';
+            z.style.left = (Math.random() * 20) + 'px';
+            zzzContainer.appendChild(z);
+            // 动画结束后移除元素
+            setTimeout(() => { z.remove(); }, 2500);
+        }
+
+        // Music Logic
         window.toggleMusic = function() {
             const audio = document.getElementById('bg-music');
             const status = document.getElementById('music-status');
-            
-            if (musicPlaylist.length === 0) return; // 没歌不放
-
+            if (musicPlaylist.length === 0) return;
             if (audio.paused) {
                 audio.play().then(() => { status.innerText = "Sound On"; status.style.opacity = 1; }).catch(e => console.log(e));
             } else { 
@@ -105,7 +203,6 @@
                 currentTrackIndex = 0;
                 const audio = document.getElementById('bg-music');
                 audio.src = musicPlaylist[0]; 
-                // 上传后不立即播放，等待互动触发，或者用户手动点击
                 document.getElementById('music-status').innerText = "Music Ready";
             }
         });
@@ -142,6 +239,10 @@
             setupPostProcessing(); setupEvents(); 
             try { await initMediaPipe(); } catch (error) { console.log("Webcam denied"); }
             const loader = document.getElementById('loader'); if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
+            
+            // 初始状态：开始睡觉
+            setSantaState('sleeping');
+            
             animate();
         }
 
@@ -290,12 +391,13 @@
             if (result.landmarks && result.landmarks.length > 0) {
                 // 有人互动
                 STATE.lastInteractionTime = Date.now();
+                // 唤醒圣诞老人去跳舞
+                setSantaState('dancing');
+
                 if(STATE.isAutoPlaying) {
-                    // 立即打断自动播放
                     STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; document.getElementById('status-indicator').style.opacity = 0;
                 }
                 
-                // 智能音乐逻辑：检测到手势且有音乐且未播放，则自动播放
                 const audio = document.getElementById('bg-music');
                 if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
                     audio.play().then(() => {
@@ -317,6 +419,8 @@
                     STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0;
                     document.getElementById('status-indicator').innerText = "Auto Loop Mode";
                     document.getElementById('status-indicator').style.opacity = 1;
+                    // 闲置了，圣诞老人去睡觉
+                    setSantaState('sleeping');
                 }
             }
         }
@@ -329,17 +433,14 @@
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
                 controls.autoRotate = false;
-                
-                // 智能音乐逻辑：自动播放时静音
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) {
                     audio.pause();
                     document.getElementById('music-status').innerText = "Auto (Muted)";
                     document.getElementById('music-status').style.opacity = 0.5;
                 }
-
                 if (STATE.autoLoopTimer < 3) { if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } }
-                else if (STATE.autoLoopTimer < 18) { STATE.rotation.y += dt * 0.1; mainGroup.rotation.y = STATE.rotation.y; } // 0.1 极慢速
+                else if (STATE.autoLoopTimer < 18) { STATE.rotation.y += dt * 0.1; mainGroup.rotation.y = STATE.rotation.y; } 
                 else if (STATE.autoLoopTimer < 23) { if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); } }
                 else { STATE.autoLoopTimer = 0; }
             } else {
