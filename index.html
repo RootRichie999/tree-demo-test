@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Perfect v11</title>
+    <title>AILIA Holiday Final Fix v12</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -143,13 +143,11 @@
         let particleSystem = [], dustSystem, photoMeshGroup = new THREE.Group();
         let dissolveParticles = [], dissolveGeo, dissolveMat;
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture; 
-        // 照片列表，用于排序
         let photoList = [];
         
         let musicPlaylist = ["https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg"]; 
         let currentTrackIndex = 0;
 
-        // Music Logic
         window.toggleMusic = function() {
             const audio = document.getElementById('bg-music');
             const status = document.getElementById('music-status');
@@ -177,7 +175,6 @@
             audio.src = musicPlaylist[currentTrackIndex]; audio.play();
         });
 
-        // 1. 处理总经理上传 (插队到最前面)
         document.getElementById('boss-input').addEventListener('change', (e) => {
             const files = e.target.files; if(!files.length) return;
             toggleMusic(); 
@@ -189,7 +186,6 @@
             e.target.value = '';
         });
 
-        // 2. 处理团队上传 (追加到后面)
         document.getElementById('team-input').addEventListener('change', (e) => {
             const files = e.target.files; if(!files.length) return;
             toggleMusic();
@@ -292,12 +288,7 @@
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions();
                 this.isDissolving = false; 
-                // --- 关键：给每个照片一个永久的随机偏移量，实现“随意炸开” ---
-                this.randomOffset = new THREE.Vector3(
-                    (Math.random() - 0.5) * 6, // X轴左右随机
-                    (Math.random() - 0.5) * 3, // Y轴上下轻微随机
-                    (Math.random() - 0.5) * 6  // Z轴前后随机
-                );
+                this.randomOffset = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6);
             }
 
             calculatePositions() {
@@ -321,50 +312,51 @@
                 let target = this.posTree;
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // --- 核心修改：基于噪点的螺旋排列 ---
-                        
-                        const totalPhotos = photoList.length;
-                        // 计算归一化进度 (0.0 到 1.0)，老板永远是 0
-                        let progress = 0;
-                        if(totalPhotos > 1 && !this.isBoss) {
-                            // 找到自己在 team 中的位置
-                            let teamIdx = 0;
-                            for(let i=0; i<totalPhotos; i++) {
-                                if(photoList[i] === this) break;
-                                if(!photoList[i].isBoss) teamIdx++;
+                        if (this.isBoss) {
+                            // --- 核心修正：Boss 放在更高的地方 (17.5) ---
+                            // 圣诞树顶的星星大约在 Y=13.2，所以 17.5 绝对安全
+                            const bossAngle = STATE.rotation.y;
+                            target = new THREE.Vector3(
+                                Math.sin(bossAngle) * 5, // 半径小一点
+                                17.5 + Math.sin(time) * 0.5, // 悬浮高度 17.5
+                                Math.cos(bossAngle) * 5
+                            );
+                            this.mesh.lookAt(0, 17.5, 0); 
+                            this.mesh.rotation.y += Math.PI; 
+                        } else {
+                            // --- 团队：从 11 开始往下，避开 12-14 的星星区域 ---
+                            const totalPhotos = photoList.length;
+                            let progress = 0;
+                            if(totalPhotos > 1) {
+                                let teamIdx = 0;
+                                for(let i=0; i<totalPhotos; i++) {
+                                    if(photoList[i] === this) break;
+                                    if(!photoList[i].isBoss) teamIdx++;
+                                }
+                                const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0);
+                                progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
-                             // 简单处理：基于全局索引计算进度
-                             progress = this.photoIdx / (totalPhotos - 1);
-                        } else if (totalPhotos === 1 && !this.isBoss) {
-                            progress = 0.5; // 只有一张团队照片时放中间
+
+                            // 高度：从 11 到 -15 (避开了上面的星星)
+                            const baseH = 11 - progress * 26; 
+                            const baseR = 12 + progress * 18;
+                            const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+
+                            const idealX = Math.sin(baseAngle) * baseR;
+                            const idealZ = Math.cos(baseAngle) * baseR;
+                            const idealY = baseH;
+
+                            const spread = 1.0 + progress * 1.5;
+
+                            target = new THREE.Vector3(
+                                idealX + this.randomOffset.x * spread,
+                                idealY + this.randomOffset.y, 
+                                idealZ + this.randomOffset.z * spread
+                            );
+
+                            this.mesh.lookAt(0, idealY, 0); 
+                            this.mesh.rotation.y += Math.PI; 
                         }
-
-                        // 1. 计算理想的螺旋基准线 (宏观有序)
-                        // 高度：从上(+12) 到 下(-14)
-                        const baseH = 12 - progress * 26; 
-                        // 半径：上面窄(10)，下面宽(28)
-                        const baseR = 10 + progress * 18;
-                        // 角度：总共旋转约 3 圈 (进度的3倍 * 2PI) + 手势旋转
-                        const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-
-                        const idealX = Math.sin(baseAngle) * baseR;
-                        const idealZ = Math.cos(baseAngle) * baseR;
-                        const idealY = baseH;
-
-                        // 2. 加上随机偏移 (微观随意)
-                        // 越往下，随机扩散的范围越大 (progress * 1.5 + 1)
-                        const spread = 1.0 + progress * 1.5;
-
-                        target = new THREE.Vector3(
-                            idealX + this.randomOffset.x * spread,
-                            idealY + this.randomOffset.y, // 高度随机性小一点
-                            idealZ + this.randomOffset.z * spread
-                        );
-
-                        // 让照片面向中心轴，然后翻转朝外
-                        this.mesh.lookAt(0, idealY, 0); 
-                        this.mesh.rotation.y += Math.PI; 
-
                     } else { target = this.posScatter; }
                 } 
 
@@ -383,7 +375,10 @@
                 }
 
                 let s = this.baseScale;
-                if (this.type === 'PHOTO' && mode === 'SCATTER') s = this.baseScale * 4.0;
+                if (this.type === 'PHOTO' && mode === 'SCATTER') {
+                    if (this.isBoss) s = this.baseScale * 6.0; // 老板照片再大一点
+                    else s = this.baseScale * 4.0;
+                }
                 this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
             }
         }
