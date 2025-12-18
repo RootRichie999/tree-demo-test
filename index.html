@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Auto-Loop v15</title>
+    <title>AILIA Smart Display v16</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -12,24 +12,26 @@
         .loader-text { color: #d4af37; font-size: 14px; letter-spacing: 4px; margin-top: 20px; text-transform: uppercase; }
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .company-header { position: absolute; top: 5%; width: 100%; text-align: center; color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); z-index: 20; letter-spacing: 6px; text-transform: uppercase; }
         h1 { position: absolute; top: 18%; width: 100%; text-align: center; color: #f2eada; font-size: 52px; margin: 0; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
+        
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
         .control-item { display: flex; align-items: center; gap: 12px; color: #d4af37; cursor: pointer; opacity: 0.7; transition: all 0.3s ease; }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
         .icon-box { font-size: 20px; width: 24px; text-align: center; display: inline-block;}
         .text-box { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif; }
         .boss-btn { color: #ffcc33; opacity: 0.9; }
+        
+        /* 状态提示 */
+        #status-indicator {
+            position: absolute; bottom: 40px; right: 40px; 
+            color: rgba(255, 255, 255, 0.2); font-size: 10px; letter-spacing: 1px;
+            text-transform: uppercase; pointer-events: none; transition: opacity 1s;
+        }
+
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
-        
-        /* 自动播放提示 */
-        #auto-status {
-            position: absolute; bottom: 40px; right: 40px; 
-            color: rgba(255, 255, 255, 0.3); font-size: 10px; letter-spacing: 1px;
-            text-transform: uppercase; pointer-events: none; opacity: 0; transition: opacity 1s;
-        }
-        
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
     </style>
     <script type="importmap">
@@ -45,10 +47,10 @@
         <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
         <label class="control-item"><span class="icon-box">＋</span><span class="text-box">Add Team Photos</span><input type="file" id="team-input" multiple accept="image/*"></label>
         <label class="control-item"><span class="icon-box">♫</span><span class="text-box">Upload Music</span><input type="file" id="music-input" multiple accept="audio/*"></label>
-        <div class="control-item" onclick="toggleMusic()"><span class="icon-box">♪</span><span class="text-box" id="music-status">Play Music</span></div>
+        <div class="control-item" onclick="toggleMusic()"><span class="icon-box">♪</span><span class="text-box" id="music-status">No Music</span></div>
     </div>
     
-    <div id="auto-status">Auto Loop Active</div>
+    <div id="status-indicator">Interactive Mode</div>
 
     <audio id="bg-music"></audio>
     <div id="webcam-wrapper"><video id="webcam" autoplay playsinline style="display:none;"></video><canvas id="webcam-preview"></canvas></div>
@@ -64,41 +66,123 @@
 
         const CONFIG = { colors: { bg: 0x000000, champagneGold: 0xffd966, deepGreen: 0x03180a, accentRed: 0x990000, sockRed: 0xcc2222, sockGreen: 0x228822 }, particles: { count: 1600, dustCount: 2000, snowCount: 200, treeHeight: 24, treeRadius: 8 }, camera: { z: 50 } };
         
-        // --- 核心：自动播放状态管理 ---
         const STATE = { 
             mode: 'TREE', lastMode: 'TREE', 
             hand: { detected: false, x: 0, y: 0 }, 
-            rotation: { x: 0, y: 0 }, 
-            time: 0,
-            
-            // 自动播放逻辑
-            lastInteractionTime: Date.now(), // 上次互动时间
-            isAutoPlaying: false,            // 是否正在自动播放
-            autoLoopTimer: 0                 // 自动播放循环计时器
+            rotation: { x: 0, y: 0 }, time: 0,
+            lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0
         };
 
-        // --- ⚠️⚠️ 设置区域：闲置多久开始自动播放？ ⚠️⚠️ ---
-        // 测试时用 10000 (10秒)。正式使用请改成 180000 (3分钟)。
+        // --- ⚠️ 闲置检测时间设置 ---
+        // 测试用 10000 (10秒)。正式使用请改为 180000 (3分钟)。
         const IDLE_THRESHOLD = 10000; 
 
         let scene, camera, renderer, composer, controls, mainGroup, clock = new THREE.Clock();
         let particleSystem = [], dustSystem, snowSystem, photoMeshGroup = new THREE.Group();
         let dissolveParticles = [], dissolveGeo, dissolveMat;
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture; 
-        let photoList = [], musicPlaylist = ["https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg"], currentTrackIndex = 0;
+        let photoList = [], musicPlaylist = [], currentTrackIndex = 0; // 默认音乐为空
 
-        window.toggleMusic = function() { const audio = document.getElementById('bg-music'), status = document.getElementById('music-status'); if (!audio.src) audio.src = musicPlaylist[0]; if (audio.paused) { audio.play().then(() => { status.innerText = "Sound On"; status.style.opacity = 1; }).catch(e => console.log(e)); } else { audio.pause(); status.innerText = "Sound Off"; status.style.opacity = 0.6; } };
-        document.getElementById('music-input').addEventListener('change', (e) => { const files = e.target.files; if (files.length > 0) { musicPlaylist = []; Array.from(files).forEach(file => musicPlaylist.push(URL.createObjectURL(file))); currentTrackIndex = 0; const audio = document.getElementById('bg-music'); audio.src = musicPlaylist[0]; audio.play(); document.getElementById('music-status').innerText = "Sound On"; } });
-        document.getElementById('bg-music').addEventListener('ended', () => { currentTrackIndex = (currentTrackIndex + 1) % musicPlaylist.length; const audio = document.getElementById('bg-music'); audio.src = musicPlaylist[currentTrackIndex]; audio.play(); });
-        document.getElementById('boss-input').addEventListener('change', (e) => { const files = e.target.files; if(!files.length) return; toggleMusic(); Array.from(files).forEach(f => { const reader = new FileReader(); reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t, true); }); }; reader.readAsDataURL(f); }); e.target.value = ''; });
-        document.getElementById('team-input').addEventListener('change', (e) => { const files = e.target.files; if(!files.length) return; toggleMusic(); Array.from(files).forEach((f, index) => { const reader = new FileReader(); reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t, false); }); }; reader.readAsDataURL(f); }); e.target.value = ''; });
+        // Music Logic - Updated
+        window.toggleMusic = function() {
+            const audio = document.getElementById('bg-music');
+            const status = document.getElementById('music-status');
+            
+            if (musicPlaylist.length === 0) return; // 没歌不放
 
-        async function init() { initThree(); setupEnvironment(); setupLights(); createTextures(); createParticles(); createInstancedDust(); createRealisticSnow(); createDissolveSystem(); setupPostProcessing(); setupEvents(); try { await initMediaPipe(); } catch (error) { console.log("Webcam denied"); } const loader = document.getElementById('loader'); if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); } animate(); }
-        function initThree() { const container = document.getElementById('canvas-container'); scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bg); scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.015); camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 2.0; container.appendChild(renderer.domElement); controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.6; controls.enablePan = false; controls.minDistance = 20; controls.maxDistance = 80; mainGroup = new THREE.Group(); scene.add(mainGroup); }
+            if (audio.paused) {
+                audio.play().then(() => { status.innerText = "Sound On"; status.style.opacity = 1; }).catch(e => console.log(e));
+            } else { 
+                audio.pause(); status.innerText = "Sound Off"; status.style.opacity = 0.6; 
+            }
+        };
+
+        document.getElementById('music-input').addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                musicPlaylist = [];
+                Array.from(files).forEach(file => musicPlaylist.push(URL.createObjectURL(file)));
+                currentTrackIndex = 0;
+                const audio = document.getElementById('bg-music');
+                audio.src = musicPlaylist[0]; 
+                // 上传后不立即播放，等待互动触发，或者用户手动点击
+                document.getElementById('music-status').innerText = "Music Ready";
+            }
+        });
+
+        document.getElementById('bg-music').addEventListener('ended', () => {
+            currentTrackIndex = (currentTrackIndex + 1) % musicPlaylist.length;
+            const audio = document.getElementById('bg-music');
+            audio.src = musicPlaylist[currentTrackIndex]; audio.play();
+        });
+
+        document.getElementById('boss-input').addEventListener('change', (e) => {
+            const files = e.target.files; if(!files.length) return;
+            Array.from(files).forEach(f => {
+                const reader = new FileReader();
+                reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t, true); }); }
+                reader.readAsDataURL(f);
+            });
+            e.target.value = '';
+        });
+
+        document.getElementById('team-input').addEventListener('change', (e) => {
+            const files = e.target.files; if(!files.length) return;
+            Array.from(files).forEach((f, index) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t, false); }); }
+                reader.readAsDataURL(f);
+            });
+            e.target.value = '';
+        });
+
+        async function init() {
+            initThree(); setupEnvironment(); setupLights(); createTextures();
+            createParticles(); createInstancedDust(); createRealisticSnow(); createDissolveSystem();
+            setupPostProcessing(); setupEvents(); 
+            try { await initMediaPipe(); } catch (error) { console.log("Webcam denied"); }
+            const loader = document.getElementById('loader'); if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
+            animate();
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bg); scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.015); 
+            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 2.0; 
+            container.appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.6; 
+            controls.enablePan = false; controls.minDistance = 20; controls.maxDistance = 80;
+            mainGroup = new THREE.Group(); scene.add(mainGroup);
+        }
+
         function setupEnvironment() { const pmremGenerator = new THREE.PMREMGenerator(renderer); scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture; }
-        function setupLights() { const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient); const innerLight = new THREE.PointLight(0xffaa00, 2, 20); mainGroup.add(innerLight); const spotGold = new THREE.SpotLight(0xffcc66, 1200); spotGold.position.set(30, 40, 40); spotGold.angle = 0.5; spotGold.penumbra = 0.5; scene.add(spotGold); const spotBlue = new THREE.SpotLight(0x6688ff, 600); spotBlue.position.set(-30, 20, -30); scene.add(spotBlue); const fill = new THREE.DirectionalLight(0xffeebb, 0.8); fill.position.set(0, 0, 50); scene.add(fill); }
-        function setupPostProcessing() { const renderScene = new RenderPass(scene, camera); const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85); bloomPass.threshold = 0.65; bloomPass.strength = 0.5; bloomPass.radius = 0.4; composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass); }
-        function createTextures() { const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128); ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill(); caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3); }
+
+        function setupLights() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
+            const innerLight = new THREE.PointLight(0xffaa00, 2, 20); mainGroup.add(innerLight);
+            const spotGold = new THREE.SpotLight(0xffcc66, 1200); spotGold.position.set(30, 40, 40); spotGold.angle = 0.5; spotGold.penumbra = 0.5; scene.add(spotGold);
+            const spotBlue = new THREE.SpotLight(0x6688ff, 600); spotBlue.position.set(-30, 20, -30); scene.add(spotBlue);
+            const fill = new THREE.DirectionalLight(0xffeebb, 0.8); fill.position.set(0, 0, 50); scene.add(fill);
+        }
+
+        function setupPostProcessing() {
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.65; bloomPass.strength = 0.5; bloomPass.radius = 0.4; 
+            composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass);
+        }
+
+        function createTextures() {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128);
+            ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill();
+            caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3);
+        }
+        
         function createSnowTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)'); gradient.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(canvas); }
         function createRealisticSnow() { const snowGeo = new THREE.BufferGeometry(); const snowVertices = []; for(let i=0; i<CONFIG.particles.snowCount; i++) { snowVertices.push(Math.random()*100 - 50, Math.random()*100 - 50, Math.random()*100 - 50); } snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowVertices, 3)); const snowMat = new THREE.PointsMaterial({ size: 1.5, map: createSnowTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }); snowSystem = new THREE.Points(snowGeo, snowMat); scene.add(snowSystem); }
         function createDissolveSystem() { dissolveGeo = new THREE.PlaneGeometry(0.3, 0.3); dissolveMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.champagneGold, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }); for(let i=0; i<300; i++) { const p = new THREE.Mesh(dissolveGeo, dissolveMat.clone()); p.visible = false; mainGroup.add(p); dissolveParticles.push({ mesh: p, life: 0, velocity: new THREE.Vector3() }); } }
@@ -129,7 +213,6 @@
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
                         if (this.isBoss) {
-                            // Boss 始终正面朝向相机
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
@@ -205,14 +288,20 @@
 
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
-                // 有人互动，重置闲置计时器
+                // 有人互动
                 STATE.lastInteractionTime = Date.now();
                 if(STATE.isAutoPlaying) {
                     // 立即打断自动播放
-                    STATE.isAutoPlaying = false;
-                    STATE.autoLoopTimer = 0;
-                    document.getElementById('auto-status').style.opacity = 0;
-                    // 如果正在散开中，不必强制切回，让手势接管即可
+                    STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; document.getElementById('status-indicator').style.opacity = 0;
+                }
+                
+                // 智能音乐逻辑：检测到手势且有音乐且未播放，则自动播放
+                const audio = document.getElementById('bg-music');
+                if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
+                    audio.play().then(() => {
+                        document.getElementById('music-status').innerText = "Sound On";
+                        document.getElementById('music-status').style.opacity = 1;
+                    }).catch(e => {});
                 }
 
                 STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
@@ -223,11 +312,11 @@
             } else { 
                 STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
                 
-                // 检查是否进入闲置自动播放模式
+                // 检查闲置
                 if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
-                    STATE.isAutoPlaying = true;
-                    STATE.autoLoopTimer = 0;
-                    document.getElementById('auto-status').style.opacity = 1;
+                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0;
+                    document.getElementById('status-indicator').innerText = "Auto Loop Mode";
+                    document.getElementById('status-indicator').style.opacity = 1;
                 }
             }
         }
@@ -237,37 +326,23 @@
         function animate() {
             requestAnimationFrame(animate); const dt = clock.getDelta(); const time = clock.elapsedTime;
             
-            // --- 自动播放逻辑 ---
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
-                controls.autoRotate = false; // 自动模式接管旋转
+                controls.autoRotate = false;
+                
+                // 智能音乐逻辑：自动播放时静音
+                const audio = document.getElementById('bg-music');
+                if(!audio.paused) {
+                    audio.pause();
+                    document.getElementById('music-status').innerText = "Auto (Muted)";
+                    document.getElementById('music-status').style.opacity = 0.5;
+                }
 
-                // 阶段1: 0-2秒 炸开
-                if (STATE.autoLoopTimer < 3) {
-                    if(STATE.mode !== 'SCATTER') {
-                        STATE.mode = 'SCATTER';
-                        shuffleTeamPhotos();
-                    }
-                }
-                // 阶段2: 3-18秒 旋转展示 (15秒)
-                else if (STATE.autoLoopTimer < 18) {
-                    // 自动旋转 rotation.y，让照片环展示
-                    STATE.rotation.y += dt * 0.4; // 适中的旋转速度
-                    mainGroup.rotation.y = STATE.rotation.y;
-                }
-                // 阶段3: 18-23秒 回归成树
-                else if (STATE.autoLoopTimer < 23) {
-                    if(STATE.mode !== 'TREE') {
-                        STATE.mode = 'TREE';
-                        photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; });
-                    }
-                }
-                // 阶段4: 重置循环
-                else {
-                    STATE.autoLoopTimer = 0;
-                }
+                if (STATE.autoLoopTimer < 3) { if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } }
+                else if (STATE.autoLoopTimer < 18) { STATE.rotation.y += dt * 0.1; mainGroup.rotation.y = STATE.rotation.y; } // 0.1 极慢速
+                else if (STATE.autoLoopTimer < 23) { if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); } }
+                else { STATE.autoLoopTimer = 0; }
             } else {
-                // 手势控制逻辑
                 if(controls) controls.update(); 
                 if (STATE.hand.detected) { const targetRotY = STATE.hand.x * Math.PI; STATE.rotation.y += (targetRotY - STATE.rotation.y) * 2.0 * dt; mainGroup.rotation.y = STATE.rotation.y; } else { STATE.rotation.y = mainGroup.rotation.y; }
             }
