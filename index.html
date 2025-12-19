@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Perfect v30</title>
+    <title>AILIA Holiday Final Perfect v31</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -136,11 +136,10 @@
         };
 
         const IDLE_THRESHOLD = 10000; // 测试10秒
-        // --- 新的时间轴配置 (加长了 Tree Hold) ---
-        const SHOWCASE_DURATION = 12;     // 漂浮展示 (稍微缩短)
-        const ABSORB_DURATION = 5;        // 吸入
-        const REFORM_DURATION = 3;        // 重组
-        // 新增：圣诞树保持状态的时长 (包含最后的爱心动画)
+        // --- 时间轴配置 (V30 加长版) ---
+        const SHOWCASE_DURATION = 12;     
+        const ABSORB_DURATION = 5;        
+        const REFORM_DURATION = 3;        
         const TREE_HOLD_DURATION = 15;    // 15秒超长待机
 
         // 圣诞老人逻辑
@@ -188,7 +187,7 @@
             });
         }
 
-        // --- 爱心控制 (精准对齐版) ---
+        // --- 爱心控制 (L下方对齐版) ---
         const heartEl = document.getElementById('magic-heart');
         function moveHeart(x, y, scale, visible) {
             if (!visible) {
@@ -199,12 +198,17 @@
             if (x === 'center') {
                 heartEl.style.top = '50%'; heartEl.style.left = '50%';
             } else if (x === 'logo') {
-                const headerRect = document.getElementById('header-company').getBoundingClientRect();
-                // --- 核心修改：精准对齐底部 ---
-                // headerRect.bottom 是文字容器的底部边缘坐标
-                // 我们向上偏移 35px，让 80px 高的爱心的“尖尖”刚好搭在基线上
-                heartEl.style.top = (headerRect.bottom - 35) + 'px';
-                heartEl.style.left = (headerRect.right + 20) + 'px'; 
+                // --- 核心修改：对齐 L 的下方 ---
+                const headerEl = document.getElementById('header-company');
+                // 获取 'L' 的 span (索引为2)
+                const lSpan = headerEl.children[2];
+                if (lSpan) {
+                    const lRect = lSpan.getBoundingClientRect();
+                    // 位于 L 正下方 25px
+                    heartEl.style.top = (lRect.bottom + 25) + 'px';
+                    // 水平居中对齐 L
+                    heartEl.style.left = (lRect.left + lRect.width / 2) + 'px';
+                }
             }
             heartEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
@@ -267,7 +271,7 @@
         }
         function createTextures() { const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128); ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill(); caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3); }
         function createSnowTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)'); gradient.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(canvas); }
-        function createRealisticSnow() { const snowGeo = new THREE.BufferGeometry(); const snowVertices = []; for(let i=0; i<CONFIG.particles.snowCount; i++) { snowVertices.push(Math.random()*100 - 50, Math.random()*100 - 50, Math.random()*100 - 50); } snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowVertices, 3)); const snowMat = new THREE.PointsMaterial({ size: 1.5, map: createSnowTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }); snowSystem = new THREE.Points(snowGeo,Mat); scene.add(snowSystem); }
+        function createRealisticSnow() { const snowGeo = new THREE.BufferGeometry(); const snowVertices = []; for(let i=0; i<CONFIG.particles.snowCount; i++) { snowVertices.push(Math.random()*100 - 50, Math.random()*100 - 50, Math.random()*100 - 50); } snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowVertices, 3)); const snowMat = new THREE.PointsMaterial({ size: 1.5, map: createSnowTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }); snowSystem = new THREE.Points(snowGeo, snowMat); scene.add(snowSystem); }
         function createDissolveSystem() { dissolveGeo = new THREE.PlaneGeometry(0.3, 0.3); dissolveMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.champagneGold, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }); for(let i=0; i<300; i++) { const p = new THREE.Mesh(dissolveGeo, dissolveMat.clone()); p.visible = false; mainGroup.add(p); dissolveParticles.push({ mesh: p, life: 0, velocity: new THREE.Vector3() }); } }
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
         function createInstancedDust() { const geo = new THREE.TetrahedronGeometry(0.12, 0); const mat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.6 }); dustSystem = new THREE.InstancedMesh(geo, mat, CONFIG.particles.dustCount); const dummy = new THREE.Object3D(); const speeds = []; for (let i = 0; i < CONFIG.particles.dustCount; i++) { const r = 15 + Math.random() * 35; const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); dummy.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)); const scale = 0.5 + Math.random(); dummy.scale.set(scale, scale, scale); dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); speeds.push({ ySpeed: 0.02 + Math.random() * 0.05, initialPos: dummy.position.clone() }); } dustSystem.userData = { speeds: speeds, dummy: dummy }; mainGroup.add(dustSystem); }
@@ -470,7 +474,6 @@
 
                 const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; 
 
-                // --- 新的时间轴逻辑 ---
                 if (STATE.autoLoopTimer < SHOWCASE_DURATION) { 
                     STATE.autoPhase = 'SHOWCASE';
                     if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
@@ -492,34 +495,26 @@
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION) { 
                     STATE.autoPhase = 'REFORM';
                     if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
-                    // 爱心飞向 Logo
                     moveHeart('logo', 'logo', 0.5, true); 
                 }
-                // --- 核心修改：超长待机与最后时刻的动画 ---
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION + TREE_HOLD_DURATION) {
                     STATE.autoPhase = 'TREE_HOLD';
-                    // 计算在这个阶段停留了多久 (0 ~ 15s)
                     const holdTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
                     
-                    // 前 10 秒：保持静止，爱心停在 Logo 旁
                     if (holdTime < 10.0) {
                         moveHeart('logo', 'logo', 0.5, true);
                     }
-                    // 第 10-11 秒：爱心闪白光
                     else if (holdTime < 11.0) {
                         heartEl.style.filter = "drop-shadow(0 0 30px white)"; 
                     }
-                    // 第 11-12 秒：爱心消失
                     else if (actTime < 12.0) {
                         moveHeart('logo', 'logo', 0, false); 
                     } 
-                    // 第 12-14 秒：Logo 整体闪烁
                     else if (actTime < 14.0) {
                         document.getElementById('header-company').classList.add('logo-flash-auto');
                     }
                 }
                 else { 
-                    // Reset
                     document.getElementById('header-company').classList.remove('logo-flash-auto');
                     STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     moveHeart('center', 'center', 0, false);
