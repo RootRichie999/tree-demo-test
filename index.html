@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Santa Ride V38</title>
+    <title>AILIA Holiday Final V39 (Embedded Santa)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -27,7 +27,6 @@
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
         .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* HTML 爱心 */
         #magic-heart {
             position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
             transform: translate(-50%, -50%) scale(0);
@@ -37,37 +36,32 @@
         }
         #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
 
-        /* --- 新增：麋鹿雪橇 (Flying Santa Sleigh) --- */
+        /* --- 麋鹿雪橇 (Embedded Base64) --- */
         #santa-sleigh-wrapper {
             position: absolute;
-            top: 15%; /* 飞行的天空高度 */
-            right: -300px; /* 初始在屏幕右侧外 */
-            width: 300px;
-            z-index: 5; /* 在文字后面，但在背景前面，若隐若现 */
-            opacity: 0.4; /* 半透明剪影 */
+            top: 10%; /* 高度 */
+            right: -400px; /* 初始隐藏在右侧外 */
+            width: 350px; /* 宽度 */
+            z-index: 5;
+            opacity: 0.6; 
             pointer-events: none;
-            /* 默认不播放，通过 JS 添加 class 播放 */
         }
         
         #santa-sleigh-img {
             width: 100%;
-            filter: brightness(0) invert(1); /* 变成白色剪影 */
+            /* 只要图片本身是黑色的，用滤镜翻转成白色 */
+            filter: brightness(0) invert(1) drop-shadow(0 0 5px rgba(255,255,255,0.5)); 
         }
 
-        /* 飞行激活动画 */
         .fly-active {
-            animation: flyAcross 20s linear forwards; /* 20秒飞完全程 */
+            animation: flyAcross 20s linear forwards;
         }
 
         @keyframes flyAcross {
-            0% { transform: translateX(0) translateY(0) rotate(5deg); right: -300px; }
-            25% { transform: translateX(-40vw) translateY(20px) rotate(0deg); }
-            50% { transform: translateX(-80vw) translateY(0px) rotate(-5deg); }
-            75% { transform: translateX(-120vw) translateY(20px) rotate(0deg); }
-            100% { transform: translateX(-150vw) translateY(-50px) rotate(5deg); right: 100%; } /* 飞出屏幕左侧 */
+            0% { transform: translateX(0) translateY(0) rotate(10deg); right: -400px; }
+            100% { transform: translateX(-150vw) translateY(-100px) rotate(-5deg); right: 100%; } 
         }
 
-        /* 底部控制栏 */
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
         .control-item { display: flex; align-items: center; gap: 12px; color: #d4af37; cursor: pointer; opacity: 0.7; transition: all 0.3s ease; }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
@@ -79,7 +73,6 @@
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
         
-        /* 交互圣诞老人 (右下角) */
         #santa-container { position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none; width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
         #santa-actor { width: 100%; height: auto; max-height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(1.2) contrast(1.1); }
         #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
@@ -105,7 +98,7 @@
     <div id="magic-heart"></div>
 
     <div id="santa-sleigh-wrapper">
-        <img id="santa-sleigh-img" src="https://cdn-icons-png.flaticon.com/512/71/71397.png" alt="Flying Santa">
+        <img id="santa-sleigh-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgMjYwIj48cGF0aCBkPSJNMTAgMjEwYy01LjUgMC0xMC00LjUtMTAtMTBzNC41LTEwIDEwLTEwaDIwYzUuNSAwIDEwIDQuNSAxMCAxMHMtNC41IDEwLTEwIDEwSDEwem01MC0yMGMtNS41IDAtMTAtNC41LTEwLTEwczQuNS0xMCAxMC0xMGgyMGM1LjUgMCAxMCA0LjUgMTAgMTBzLTQuNSAxMC0xMCAxMEg2MHptNTAgMGMtNS41IDAtMTAtNC41LTEwLTEwczQuNS0xMCAxMC0xMGgyMGM1LjUgMCAxMCA0LjUgMTAgMTBzLTQuNSAxMC0xMCAxMEgxMTB6bTUwLTIwYy01LjUgMC0xMC00LjUtMTAtMTBzNC41LTEwIDEwLTEwaDIwYzUuNSAwIDEwIDQuNSAxMCAxMHMtNC41IDEwLTEwIDEwSDE2MHptNTAgMGMtNS41IDAtMTAtNC41LTEwLTEwczQuNS0xMCAxMC0xMGgyMGM1LjUgMCAxMCA0LjUgMTAgMTBzLTQuNSAxMC0xMCAxMEgyMTB6bTUwLTIwYy01LjUgMC0xMC00LjUtMTAtMTBzNC41LTEwIDEwLTEwaDIwYzUuNSAwIDEwIDQuNSAxMCAxMHMtNC41IDEwLTEwIDEwSDI2MHptNTAtMjBjLTUuNSAwLTEwLTQuNS0xMC0xMHM0LjUtMTAgMTAtMTBoMjBjNS41IDAgMTAgNC41IDEwIDEwcy00LjUgMTAtMTAgMTBIMzEwem01MC0yMGMtNS41IDAtMTAtNC41LTEwLTEwczQuNS0xMCAxMC0xMGgyMGM1LjUgMCAxMCA0LjUgMTAgMTBzLTQuNSAxMC0xMCAxMEgzNjB6TTQ4MCA1MGwtNDAgMTBoLTEwYy01LjUyMyAwLTEwLTQuNDc3LTEwLTEwVjMwYzAtNS41MjMgNC40NzctMTAgMTAtMTBoMTBsNDAgMTBoMTBWMzBoMTB2MTBoNDB2MTBoLTR2MTBoNHYxMGgtNDB2MTBoLTEwVjYwaC0xMHptLTEwIDQwaC0xMHYxMGgxMHYtMTB6IiBmaWxsPSIjMDAwIi8+PC9zdmc+" alt="Flying Santa">
     </div>
 
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
@@ -172,7 +165,6 @@
         // --- 麋鹿飞行逻辑 ---
         function triggerSantaFlight() {
             const sleigh = document.getElementById('santa-sleigh-wrapper');
-            // 重置动画
             sleigh.classList.remove('fly-active');
             void sleigh.offsetWidth; // 触发重绘
             sleigh.classList.add('fly-active');
@@ -259,6 +251,7 @@
         async function init() {
             splitTextToSpans('header-company');
             splitTextToSpans('header-title');
+            
             setTimeout(updateLPosition, 500);
             window.addEventListener('resize', () => { setTimeout(updateLPosition, 500); });
 
@@ -407,87 +400,6 @@
             }
         }
 
-        function createParticles() {
-            const sphereGeo = new THREE.SphereGeometry(0.5, 32, 32); const boxGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55); 
-            const sockCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.6, 0), new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.3, -0.2, 0), new THREE.Vector3(0.5, 0, 0)]); const sockGeo = new THREE.TubeGeometry(sockCurve, 12, 0.25, 8, false);
-            const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(0, 0.3, 0), new THREE.Vector3(0.1, 0.5, 0), new THREE.Vector3(0.3, 0.4, 0)]); const candyGeo = new THREE.TubeGeometry(curve, 16, 0.08, 8, false);
-            const goldMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1, envMapIntensity: 2.0, emissive: 0x443300, emissiveIntensity: 0.3 });
-            const greenMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.deepGreen, metalness: 0.2, roughness: 0.8, emissive: 0x002200, emissiveIntensity: 0.2 });
-            const redMat = new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.2, clearcoat: 1.0, emissive: 0x330000 });
-            const candyMat = new THREE.MeshStandardMaterial({ map: caneTexture, roughness: 0.4 });
-            const redSockMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.sockRed, roughness: 0.9, metalness: 0.1 }); const greenSockMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.sockGreen, roughness: 0.9, metalness: 0.1 });
-
-            for (let i = 0; i < CONFIG.particles.count; i++) {
-                const rand = Math.random(); let mesh, type;
-                if (rand < 0.35) { mesh = new THREE.Mesh(boxGeo, greenMat); type = 'BOX'; } else if (rand < 0.65) { mesh = new THREE.Mesh(boxGeo, goldMat); type = 'GOLD_BOX'; } else if (rand < 0.85) { mesh = new THREE.Mesh(sphereGeo, goldMat); type = 'GOLD_SPHERE'; } else if (rand < 0.92) { mesh = new THREE.Mesh(sphereGeo, redMat); type = 'RED'; } else if (rand < 0.96) { mesh = new THREE.Mesh(candyGeo, candyMat); type = 'CANE'; } else { mesh = new THREE.Mesh(sockGeo, Math.random()>0.5 ? redSockMat : greenSockMat); type = 'SOCK'; }
-                let s = 0.4 + Math.random() * 0.5; if(type === 'SOCK') s *= 0.8; mesh.scale.set(s,s,s); mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6); mainGroup.add(mesh); particleSystem.push(new Particle(mesh, type)); 
-            }
-            mainGroup.add(photoMeshGroup);
-        }
-
-        function addPhotoToScene(texture, isBoss) {
-            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true;
-            const isRedFrame = !isBoss && Math.random() > 0.7; 
-            const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.4 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
-            const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
-            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }); 
-            const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
-            const group = new THREE.Group(); group.add(frame); group.add(photo);
-            const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
-            let photoIdx; if (isBoss) { photoIdx = 0; } else { photoIdx = photoList.length; }
-            const particle = new Particle(group, 'PHOTO', photoIdx, isBoss);
-            if (isBoss) photoList.unshift(particle); else photoList.push(particle);
-            particleSystem.push(particle);
-        }
-        
-        function shuffleTeamPhotos() { if (photoList.length <= 2) return; const boss = photoList[0].isBoss ? photoList[0] : null; let team = photoList[0].isBoss ? photoList.slice(1) : [...photoList]; for (let i = team.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [team[i], team[j]] = [team[j], team[i]]; } if (boss) { photoList = [boss, ...team]; } else { photoList = team; } }
-
-        async function initMediaPipe() { if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return; video = document.getElementById('webcam'); webcamCanvas = document.getElementById('webcam-preview'); webcamCtx = webcamCanvas.getContext('2d'); webcamCanvas.width = 160; webcamCanvas.height = 120; const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"); handLandmarker = await HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" }, runningMode: "VIDEO", numHands: 1 }); try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam); } catch (e) { console.log("Webcam denied"); throw e; } }
-        let lastVideoTime = -1;
-        async function predictWebcam() { if (video.currentTime !== lastVideoTime) { lastVideoTime = video.currentTime; if (handLandmarker) { const result = handLandmarker.detectForVideo(video, performance.now()); processGestures(result); } } requestAnimationFrame(predictWebcam); }
-
-        function processGestures(result) {
-            if (result.landmarks && result.landmarks.length > 0) {
-                if (!STATE.wasHandDetected) {
-                    flashOddLetters();
-                    STATE.wasHandDetected = true;
-                }
-
-                STATE.lastInteractionTime = Date.now();
-                if(STATE.isAutoPlaying) {
-                    STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    showSleepingSanta(false); 
-                    moveHeart(0, 0, 0, false);
-                    document.getElementById('header-company').classList.remove('logo-flash-auto'); 
-                    // 停止雪橇
-                    document.getElementById('santa-sleigh-wrapper').classList.remove('fly-active');
-                }
-                const audio = document.getElementById('bg-music');
-                if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
-                    audio.play().then(() => {
-                        document.getElementById('music-status').innerText = "Sound On";
-                        document.getElementById('music-status').style.opacity = 1;
-                    }).catch(e => {});
-                }
-                STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
-                if(controls) controls.autoRotate = false; 
-                const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
-                if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
-                    STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); 
-                } 
-                else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
-            } else { 
-                STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
-                STATE.wasHandDetected = false; 
-
-                if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
-                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    showSleepingSanta(true); 
-                    triggerSantaFlight(); // 开始飞行
-                }
-            }
-        }
-
         function setupEvents() { window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }); window.addEventListener('click', () => { const audio = document.getElementById('bg-music'); if(audio.paused && document.getElementById('music-status').innerText === "Play Music") { } }, { once: true }); }
 
         function animate() {
@@ -535,22 +447,29 @@
                     STATE.autoPhase = 'TREE_HOLD';
                     const holdTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
                     
+                    // --- 紧凑时间轴 (V35) ---
+                    // 0-4s: 静止展示
                     if (holdTime < 4.0) {
                         moveHeart('logo', 'logo', 0.5, true); 
                         heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
                     }
-                    else if (holdTime < 4.5) {
+                    // 4.2s: 爱心闪光
+                    else if (holdTime < 4.4) {
                         heartEl.style.filter = "drop-shadow(0 0 50px white)"; 
                     }
-                    if (holdTime > 4.2 && holdTime < 4.4) { 
+                    // 4.4s: Logo 闪烁 (衔接紧密)
+                    if (holdTime > 4.4 && holdTime < 4.6) {
                          document.getElementById('header-company').classList.add('logo-flash-auto');
                     }
+                    // 4.8s: 爱心消失
                     if (holdTime > 4.8) {
                         moveHeart('logo', 'logo', 0, false); 
                     }
+                    // 5.0s: Logo 停止闪烁
                     if (holdTime > 5.0) {
                         document.getElementById('header-company').classList.remove('logo-flash-auto');
                     }
+                    // 剩余4秒：余韵
                 }
                 else { 
                     // Reset
@@ -558,6 +477,8 @@
                     STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     moveHeart('center', 'center', 0, false);
                     heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
+                    // 重置雪橇状态以便下次飞
+                    document.getElementById('santa-sleigh-wrapper').classList.remove('fly-active');
                 }
             } else {
                 if(controls) controls.update(); 
