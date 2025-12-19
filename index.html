@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Stable V33</title>
+    <title>AILIA Holiday Final Fast-Paced v34</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -106,15 +106,15 @@
             wasHandDetected: false 
         };
 
-        // --- ⚠️⚠️⚠️ 自动播放设置：当前为 5000 (5秒) 方便您马上验证修复 ---
-        // 验证无误后，请改为 180000 (3分钟)
-        const IDLE_THRESHOLD = 5000; 
+        // --- ⚠️⚠️⚠️ 自动播放等待时间：10秒 (测试) -> 正式请改 180000 ---
+        const IDLE_THRESHOLD = 10000; 
 
-        // 时间轴
+        // --- 时间轴 (已压缩等待时间) ---
         const SHOWCASE_DURATION = 12;     
         const ABSORB_DURATION = 5;        
         const REFORM_DURATION = 3;        
-        const TREE_HOLD_DURATION = 18; 
+        // 核心修改：从18秒改为9秒，减少等待
+        const TREE_HOLD_DURATION = 9; 
 
         // 圣诞老人逻辑
         const santaContainer = document.getElementById('santa-container');
@@ -152,6 +152,7 @@
             }
         }
 
+        // --- 交互闪烁 ---
         function flashOddLetters() {
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
             oddSpans.forEach(span => {
@@ -164,7 +165,6 @@
         const heartEl = document.getElementById('magic-heart');
         let cachedLPos = null;
 
-        // 只在初始化和窗口改变时计算一次位置，解决卡顿
         function updateLPosition() {
             const headerEl = document.getElementById('header-company');
             // AILIA 的 'L' 是第3个字符(index 2)
@@ -172,7 +172,7 @@
                 const lSpan = headerEl.children[2];
                 const lRect = lSpan.getBoundingClientRect();
                 cachedLPos = {
-                    // 修正：向上提 65px，让爱心尖尖对齐 L 底部
+                    // 向上提 65px，让爱心尖尖对齐 L 底部
                     top: (lRect.bottom - 65) + 'px', 
                     left: (lRect.left + lRect.width / 2) + 'px'
                 };
@@ -220,7 +220,6 @@
             splitTextToSpans('header-company');
             splitTextToSpans('header-title');
             
-            // 延迟一点初始化位置，确保字体加载完成
             setTimeout(updateLPosition, 500);
             window.addEventListener('resize', () => { setTimeout(updateLPosition, 500); });
 
@@ -259,7 +258,6 @@
         }
         function createTextures() { const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128); ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill(); caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3); }
         function createSnowTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)'); gradient.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(canvas); }
-        // 修正了这里的 Mat 拼写错误 (snowMat)
         function createRealisticSnow() { const snowGeo = new THREE.BufferGeometry(); const snowVertices = []; for(let i=0; i<CONFIG.particles.snowCount; i++) { snowVertices.push(Math.random()*100 - 50, Math.random()*100 - 50, Math.random()*100 - 50); } snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowVertices, 3)); const snowMat = new THREE.PointsMaterial({ size: 1.5, map: createSnowTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }); snowSystem = new THREE.Points(snowGeo, snowMat); scene.add(snowSystem); }
         function createDissolveSystem() { dissolveGeo = new THREE.PlaneGeometry(0.3, 0.3); dissolveMat = new THREE.MeshBasicMaterial({ color: CONFIG.colors.champagneGold, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }); for(let i=0; i<300; i++) { const p = new THREE.Mesh(dissolveGeo, dissolveMat.clone()); p.visible = false; mainGroup.add(p); dissolveParticles.push({ mesh: p, life: 0, velocity: new THREE.Vector3() }); } }
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
@@ -482,25 +480,33 @@
                 }
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION) { 
                     STATE.autoPhase = 'REFORM';
-                    if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
-                    // 彻底移除 DOM 计算，只读取缓存
+                    if(STATE.mode !== 'TREE') { 
+                        STATE.mode = 'TREE'; 
+                        photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
+                        // 进入此阶段时计算一次 L 位置
+                        updateLPosition(); 
+                    }
                     moveHeart('logo', 'logo', 0.5, true); 
                 }
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION + TREE_HOLD_DURATION) {
                     STATE.autoPhase = 'TREE_HOLD';
                     const holdTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
                     
-                    if (holdTime < 13.0) {
+                    if (holdTime < 4.0) {
+                        // 缩短等待：前4秒静止
                         moveHeart('logo', 'logo', 0.5, true); 
                         heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
                     }
-                    else if (holdTime < 14.0) {
+                    else if (holdTime < 5.0) {
+                        // 爱心闪烁
                         heartEl.style.filter = "drop-shadow(0 0 30px white)"; 
                     }
-                    else if (holdTime < 15.0) {
+                    else if (holdTime < 6.0) {
+                        // 爱心消失
                         moveHeart('logo', 'logo', 0, false); 
                     } 
-                    else if (holdTime < 17.0) {
+                    else if (holdTime < 8.0) {
+                        // Logo 闪烁
                         document.getElementById('header-company').classList.add('logo-flash-auto');
                     }
                 }
