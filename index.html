@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Gold v21</title>
+    <title>AILIA Holiday Multi-Mode v22</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -12,81 +12,22 @@
         .loader-text { color: #d4af37; font-size: 14px; letter-spacing: 4px; margin-top: 20px; text-transform: uppercase; }
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .company-header { position: absolute; top: 5%; width: 100%; text-align: center; color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); z-index: 20; letter-spacing: 6px; text-transform: uppercase; }
         h1 { position: absolute; top: 18%; width: 100%; text-align: center; color: #f2eada; font-size: 52px; margin: 0; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
-        
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
         .control-item { display: flex; align-items: center; gap: 12px; color: #d4af37; cursor: pointer; opacity: 0.7; transition: all 0.3s ease; }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
         .icon-box { font-size: 20px; width: 24px; text-align: center; display: inline-block;}
         .text-box { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif; }
         .boss-btn { color: #ffcc33; opacity: 0.9; }
-        
-        #status-indicator {
-            position: absolute; bottom: 40px; right: 40px; 
-            color: rgba(255, 255, 255, 0.2); font-size: 10px; letter-spacing: 1px;
-            text-transform: uppercase; pointer-events: none; transition: opacity 1s;
-        }
-
+        #status-indicator { position: absolute; bottom: 40px; right: 40px; color: rgba(255, 255, 255, 0.2); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; pointer-events: none; transition: opacity 1s; }
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
-        
-        /* --- 核心优化：圣诞老人混合模式 --- */
-        #santa-container {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            z-index: 15;
-            pointer-events: none;
-            width: 100px; /* 稍微放大一点，因为去掉了黑底 */
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            opacity: 0;
-            transition: opacity 1.5s ease-in-out;
-            /* 关键：让整个容器内的元素应用滤色模式，黑底变透明 */
-            mix-blend-mode: screen; 
-        }
-        
-        #santa-actor {
-            width: 100%;
-            height: auto;
-            max-height: 100%;
-            object-fit: contain;
-            opacity: 0.9; /* 保持较高不透明度，颜色更鲜艳 */
-            /* 稍微调亮一点，防止滤色模式下太暗 */
-            filter: brightness(1.2) contrast(1.1); 
-        }
-
-        /* Zzz 动画 */
-        #zzz-container {
-            position: absolute;
-            top: -20px;
-            right: 10px;
-            width: 40px;
-            height: 40px;
-            pointer-events: none;
-        }
-
-        .zzz-particle {
-            position: absolute;
-            color: #fff;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            font-weight: bold;
-            opacity: 0;
-            text-shadow: 0 0 3px #000;
-            animation: floatZzz 3s linear forwards;
-        }
-
-        @keyframes floatZzz {
-            0% { opacity: 0; transform: translateY(10px) translateX(0) scale(0.4); }
-            20% { opacity: 0.8; }
-            80% { opacity: 0.4; }
-            100% { opacity: 0; transform: translateY(-50px) translateX(30px) scale(1.0); }
-        }
-        
+        #santa-container { position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none; width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
+        #santa-actor { width: 100%; height: auto; max-height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(1.2) contrast(1.1); }
+        #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
+        .zzz-particle { position: absolute; color: #fff; font-family: 'Comic Sans MS', cursive, sans-serif; font-weight: bold; opacity: 0; text-shadow: 0 0 3px #000; animation: floatZzz 3s linear forwards; }
+        @keyframes floatZzz { 0% { opacity: 0; transform: translateY(10px) translateX(0) scale(0.4); } 20% { opacity: 0.8; } 80% { opacity: 0.4; } 100% { opacity: 0; transform: translateY(-50px) translateX(30px) scale(1.0); } }
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
     </style>
     <script type="importmap">
@@ -97,21 +38,14 @@
     <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic</div></div>
     <div id="canvas-container"></div>
     <div id="ui-layer"><div class="company-header">AILIA</div><h1>Merry Christmas</h1></div>
-    
-    <div id="santa-container">
-        <div id="zzz-container"></div>
-        <img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa">
-    </div>
-
+    <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
     <div id="controls-wrapper">
         <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
         <label class="control-item"><span class="icon-box">＋</span><span class="text-box">Add Team Photos</span><input type="file" id="team-input" multiple accept="image/*"></label>
         <label class="control-item"><span class="icon-box">♫</span><span class="text-box">Upload Music</span><input type="file" id="music-input" multiple accept="audio/*"></label>
         <div class="control-item" onclick="toggleMusic()"><span class="icon-box">♪</span><span class="text-box" id="music-status">No Music</span></div>
     </div>
-    
     <div id="status-indicator">Interactive Mode</div>
-
     <audio id="bg-music"></audio>
     <div id="webcam-wrapper"><video id="webcam" autoplay playsinline style="display:none;"></video><canvas id="webcam-preview"></canvas></div>
 
@@ -130,13 +64,13 @@
             mode: 'TREE', lastMode: 'TREE', 
             hand: { detected: false, x: 0, y: 0 }, 
             rotation: { x: 0, y: 0 }, time: 0,
-            lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0
+            lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0,
+            autoMode: 'SPIRAL' // 新增：SPIRAL(默认), GALAXY, DNA
         };
 
-        // --- ⚠️ 自动播放等待时间：正式用请改为 180000 ---
-        const IDLE_THRESHOLD = 10000; 
+        // --- ⚠️ 自动播放等待时间 ---
+        const IDLE_THRESHOLD = 180000; // 3分钟
 
-        // 圣诞老人逻辑
         const santaContainer = document.getElementById('santa-container');
         const zzzContainer = document.getElementById('zzz-container');
         let zzzInterval = null;
@@ -144,19 +78,12 @@
         function showSleepingSanta(show) {
             if (show) {
                 santaContainer.style.opacity = '1';
-                if (!zzzInterval) {
-                    zzzInterval = setInterval(spawnZzz, 1500); 
-                    spawnZzz();
-                }
-                document.getElementById('status-indicator').innerText = "Auto Loop Mode (Santa Sleeping)";
+                if (!zzzInterval) { zzzInterval = setInterval(spawnZzz, 1500); spawnZzz(); }
+                document.getElementById('status-indicator').innerText = "Auto Loop: " + STATE.autoMode; // 显示当前模式
                 document.getElementById('status-indicator').style.opacity = 1;
             } else {
                 santaContainer.style.opacity = '0';
-                if (zzzInterval) {
-                    clearInterval(zzzInterval);
-                    zzzInterval = null;
-                    zzzContainer.innerHTML = ''; 
-                }
+                if (zzzInterval) { clearInterval(zzzInterval); zzzInterval = null; zzzContainer.innerHTML = ''; }
                 document.getElementById('status-indicator').style.opacity = 0;
             }
         }
@@ -305,16 +232,42 @@
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
-                            const totalPhotos = photoList.length; let progress = 0;
+                            // --- 核心：多重自动模式支持 ---
+                            const currentAutoMode = STATE.isAutoPlaying ? STATE.autoMode : 'SPIRAL'; // 手势默认为螺旋
+                            const totalPhotos = photoList.length; 
+                            let progress = 0;
+                            
+                            // 查找进度
                             if(totalPhotos > 1) {
                                 let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
                                 const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
-                            const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                            const idealX = Math.sin(baseAngle) * baseR; const idealZ = Math.cos(baseAngle) * baseR; const idealY = baseH;
-                            const spread = 1.0 + progress * 1.5;
-                            target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
-                            this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
+
+                            if (currentAutoMode === 'GALAXY') {
+                                // 星河模式：扁平大圆盘
+                                const baseR = 15 + Math.random() * 25; // 随机半径
+                                const baseAngle = progress * Math.PI * 10 + STATE.rotation.y;
+                                const heightY = (Math.random() - 0.5) * 10; // 高度随机波动
+                                target = new THREE.Vector3(Math.sin(baseAngle) * baseR, heightY, Math.cos(baseAngle) * baseR);
+                                this.mesh.lookAt(0, heightY, 0); this.mesh.rotation.y += Math.PI;
+                            
+                            } else if (currentAutoMode === 'DNA') {
+                                // DNA 双螺旋模式
+                                const strand = (this.photoIdx % 2 === 0) ? 1 : -1; // 分两股
+                                const heightY = 12 - progress * 24; 
+                                const baseR = 20;
+                                const baseAngle = heightY * 0.5 + STATE.rotation.y + (strand * Math.PI);
+                                target = new THREE.Vector3(Math.sin(baseAngle) * baseR, heightY, Math.cos(baseAngle) * baseR);
+                                this.mesh.lookAt(0, heightY, 0); this.mesh.rotation.y += Math.PI;
+
+                            } else {
+                                // 默认：SPIRAL (螺旋阶梯)
+                                const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+                                const idealX = Math.sin(baseAngle) * baseR; const idealZ = Math.cos(baseAngle) * baseR; const idealY = baseH;
+                                const spread = 1.0 + progress * 1.5;
+                                target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
+                                this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
+                            }
                         }
                     } else { target = this.posScatter; }
                 } 
@@ -376,6 +329,7 @@
 
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
+                // 有人互动
                 STATE.lastInteractionTime = Date.now();
                 if(STATE.isAutoPlaying) {
                     STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0;
@@ -391,7 +345,12 @@
                 STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
                 if(controls) controls.autoRotate = false; 
                 const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
-                if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } 
+                if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
+                    STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; 
+                    // 默认手势还是螺旋，洗牌
+                    STATE.autoMode = 'SPIRAL';
+                    shuffleTeamPhotos(); 
+                } 
                 else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
             } else { 
                 STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
@@ -416,7 +375,18 @@
                     document.getElementById('music-status').innerText = "Auto (Muted)";
                     document.getElementById('music-status').style.opacity = 0.5;
                 }
-                if (STATE.autoLoopTimer < 3) { if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } }
+
+                if (STATE.autoLoopTimer < 3) { 
+                    if(STATE.mode !== 'SCATTER') { 
+                        STATE.mode = 'SCATTER'; 
+                        shuffleTeamPhotos(); 
+                        // 随机选择一种模式
+                        const modes = ['SPIRAL', 'GALAXY', 'DNA'];
+                        STATE.autoMode = modes[Math.floor(Math.random() * modes.length)];
+                        // 更新UI提示
+                        document.getElementById('status-indicator').innerText = "Auto Loop: " + STATE.autoMode;
+                    } 
+                }
                 else if (STATE.autoLoopTimer < 18) { STATE.rotation.y += dt * 0.1; mainGroup.rotation.y = STATE.rotation.y; } 
                 else if (STATE.autoLoopTimer < 23) { if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); } }
                 else { STATE.autoLoopTimer = 0; }
