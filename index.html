@@ -3,19 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final V41 (Stable & Fast)</title>
+    <title>AILIA Holiday Final V41 (Emoji Silhouette)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-        
-        /* Loading 界面优化 */
-        #loader { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 100; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            transition: opacity 0.8s ease-out; 
-        }
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.0s ease-out; }
         .loader-text { color: #d4af37; font-size: 14px; letter-spacing: 4px; margin-top: 20px; text-transform: uppercase; }
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -30,14 +23,10 @@
         }
         h1 { margin-top: 20px; color: #f2eada; font-size: 52px; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
 
-        /* 交互模式：单字闪烁 */
         .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
-        
-        /* 自动模式：整体闪烁 */
         .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* HTML 爱心 */
         #magic-heart {
             position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
             transform: translate(-50%, -50%) scale(0);
@@ -47,19 +36,21 @@
         }
         #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
 
-        /* --- 麋鹿雪橇 (Inline SVG) --- */
+        /* --- 🎅 硬核 Emoji 麋鹿雪橇 (绝对可见) --- */
         #santa-sleigh-wrapper {
             position: absolute;
-            top: 15%; /* 飞行高度 */
-            right: -600px; /* 初始隐藏 */
-            width: 400px; 
-            height: 150px;
+            top: 15%; 
+            right: -600px;
+            font-size: 100px; /* 大小 */
+            white-space: nowrap;
             z-index: 5;
-            opacity: 0.9; 
+            opacity: 0.8; 
             pointer-events: none;
-            /* 关键：设置白色填充和发光 */
-            fill: #ffffff;
-            filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+            
+            /* 关键：把彩色Emoji变成白色剪影 */
+            filter: brightness(0) invert(1) drop-shadow(0 0 5px rgba(255,255,255,0.8));
+            /* 水平翻转，让它们向左飞 */
+            transform: scaleX(-1);
         }
         
         .fly-active {
@@ -67,8 +58,11 @@
         }
 
         @keyframes flyAcross {
-            0% { transform: translateX(0) translateY(0) rotate(10deg); right: -600px; }
-            100% { transform: translateX(-150vw) translateY(-100px) rotate(-5deg); right: 100%; } 
+            0% { right: -600px; top: 20%; transform: scaleX(-1) rotate(5deg); }
+            25% { top: 25%; }
+            50% { top: 15%; }
+            75% { top: 20%; }
+            100% { right: 120%; top: 10%; transform: scaleX(-1) rotate(-5deg); } 
         }
 
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -106,11 +100,7 @@
 
     <div id="magic-heart"></div>
 
-    <svg id="santa-sleigh-wrapper" viewBox="0 0 512 200" xmlns="http://www.w3.org/2000/svg">
-        <g transform="scale(-1, 1) translate(-512, 0)"> 
-             <path d="M472.9 85.6c-7.9-3.7-16.1-5.1-23.9-3.6-2.1-3.9-5.1-7.7-9.2-10.9-8.4-6.6-18.7-7.9-25.2-3.8-3.9 2.5-6.1 6.5-7.3 10.7-5-1.5-10.3-2.1-15.6-1.5-4.4-7.5-10.8-13.9-19-17.7-13.6-6.4-28.1-1.3-33.6 8.7-2.6 4.7-2.7 9.8-1.1 14.5-5.9.6-11.5 2.6-16.7 5.7-4.9-7.3-11.8-13.1-20.1-16.1-14.4-5.2-28.6 1.6-32.9 12.3-2 5-1.9 10.2.2 14.8-10.6 5.6-22.3 8.3-33.1 7.2-2.3-3.6-5.4-6.8-9.2-9.1-8.4-5.2-18.4-5.1-23.7-.4-3.2 2.8-4.5 6.6-4.6 10.5-5.6 1.9-10.9 4.8-15.7 8.5-4.3-1.8-9-2.9-14-3.1-1.1-6.1-3.8-11.9-8.4-16.7-10.4-10.9-27.1-11.3-37.4-1.3-4.8 4.6-7.3 10.9-7.2 17.1-12.3 8-22.3 19-28.7 31.8-3.1 6.2-10.4 9.4-17.2 7.7-6.8-1.7-11-8.2-10.2-15.1.7-5.9 3.5-11.3 7.8-15.4 6-5.7 13.9-8.8 22.2-8.8 2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5c-10.7 0-20.9 4-28.7 11.3-5.5 5.2-9.2 12.1-10.1 19.7-.1.9-.6 1.7-1.3 2.3-10.4 8.7-17 21.8-17 36.4 0 19.3 11.3 36.1 27.8 43.8 2.3 1.1 4.7 1.9 7.2 2.5 1.5.3 3 .6 4.6.8h.6c1.2.2 2.4.3 3.6.3 13.2 0 25.1-5.3 33.8-13.9.7-.7 1.7-1 2.7-.9 5.3.6 10.7-.1 15.8-2 6.3 13.6 20.1 23 36.1 23 4.2 0 8.3-.6 12.1-1.8 4.3 2.7 9.2 4.2 14.5 4.2 12.2 0 22.6-8 25.9-19 3.1 1.7 6.6 2.6 10.3 2.6 8 0 15.1-4.3 18.9-10.7 5.6 2.3 11.7 3.3 17.8 2.8 3.5 6.2 10.1 10.4 17.7 10.4 3.7 0 7.2-1 10.2-2.7 3.3 11.2 13.8 19.4 26.2 19.4 5.3 0 10.2-1.5 14.5-4.1 3.8 1.1 7.8 1.7 12 1.7 15.9 0 29.8-9.3 36.1-22.9 5.2 2.1 10.8 2.9 16.3 2.3.9-.1 1.8.2 2.5.8 8.7 7.7 20 11.9 31.7 11.9 1.6 0 3.2-.1 4.7-.2h.2c1.7-.2 3.3-.5 4.9-.8 2.5-.5 4.9-1.3 7.3-2.3 16.5-7.2 28.1-23.6 28.9-42.9.1-13.7-6-26.6-15.8-35.4z" />
-        </g>
-    </svg>
+    <div id="santa-sleigh-wrapper">🦌🦌🛷</div>
 
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
     
@@ -153,7 +143,6 @@
         const REFORM_DURATION = 3;        
         const TREE_HOLD_DURATION = 9;     
 
-        // 圣诞老人逻辑
         const santaContainer = document.getElementById('santa-container');
         const zzzContainer = document.getElementById('zzz-container');
         let zzzInterval = null;
@@ -181,7 +170,6 @@
             sleigh.classList.add('fly-active');
         }
 
-        // --- 文字拆分 ---
         function splitTextToSpans(elementId) {
             const el = document.getElementById(elementId);
             const text = el.innerText;
@@ -197,7 +185,6 @@
             }
         }
 
-        // --- 交互闪烁 ---
         function flashOddLetters() {
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
             oddSpans.forEach(span => {
@@ -206,7 +193,6 @@
             });
         }
 
-        // --- 爱心控制 ---
         const heartEl = document.getElementById('magic-heart');
         let cachedLPos = null;
 
@@ -269,17 +255,14 @@
             createParticles(); createInstancedDust(); createRealisticSnow(); createDissolveSystem();
             setupPostProcessing(); setupEvents(); 
             
-            // 优化：不让 MediaPipe 阻塞页面加载。后台静默加载。
+            // 后台静默加载手势，防止阻塞
             initMediaPipe().then(() => {
                 console.log("Magic Hands Ready");
             }).catch(() => {
                 console.log("Webcam/MediaPipe failed (Cosmetic only, app still works)");
             });
 
-            // 强制移除 Loading，保证页面秒开
-            const loader = document.getElementById('loader'); 
-            if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
-            
+            const loader = document.getElementById('loader'); if (loader) { loader.style.opacity = 0; setTimeout(() => loader.remove(), 1000); }
             animate();
         }
 
@@ -313,7 +296,6 @@
         function createTextures() { const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128); ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill(); caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3); }
         function createSnowTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)'); gradient.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(canvas); }
         
-        // --- 修复：确保 snowMat 变量名正确 ---
         function createRealisticSnow() { 
             const snowGeo = new THREE.BufferGeometry(); 
             const snowVertices = []; 
@@ -321,11 +303,7 @@
                 snowVertices.push(Math.random()*100 - 50, Math.random()*100 - 50, Math.random()*100 - 50); 
             } 
             snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowVertices, 3)); 
-            
-            // 修复点：定义 snowMat
             const snowMat = new THREE.PointsMaterial({ size: 1.5, map: createSnowTexture(), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }); 
-            
-            // 修复点：使用 snowMat (之前可能错写成了 Mat)
             snowSystem = new THREE.Points(snowGeo, snowMat); 
             scene.add(snowSystem); 
         }
@@ -472,13 +450,7 @@
         
         function shuffleTeamPhotos() { if (photoList.length <= 2) return; const boss = photoList[0].isBoss ? photoList[0] : null; let team = photoList[0].isBoss ? photoList.slice(1) : [...photoList]; for (let i = team.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [team[i], team[j]] = [team[j], team[i]]; } if (boss) { photoList = [boss, ...team]; } else { photoList = team; } }
 
-        async function initMediaPipe() { 
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return; 
-            video = document.getElementById('webcam'); webcamCanvas = document.getElementById('webcam-preview'); webcamCtx = webcamCanvas.getContext('2d'); webcamCanvas.width = 160; webcamCanvas.height = 120; 
-            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"); 
-            handLandmarker = await HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" }, runningMode: "VIDEO", numHands: 1 }); 
-            try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam); } catch (e) { console.log("Webcam denied"); throw e; } 
-        }
+        async function initMediaPipe() { if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return; video = document.getElementById('webcam'); webcamCanvas = document.getElementById('webcam-preview'); webcamCtx = webcamCanvas.getContext('2d'); webcamCanvas.width = 160; webcamCanvas.height = 120; const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"); handLandmarker = await HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" }, runningMode: "VIDEO", numHands: 1 }); try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam); } catch (e) { console.log("Webcam denied"); throw e; } }
         let lastVideoTime = -1;
         async function predictWebcam() { if (video.currentTime !== lastVideoTime) { lastVideoTime = video.currentTime; if (handLandmarker) { const result = handLandmarker.detectForVideo(video, performance.now()); processGestures(result); } } requestAnimationFrame(predictWebcam); }
 
@@ -588,6 +560,7 @@
                     }
                 }
                 else { 
+                    // Reset
                     document.getElementById('header-company').classList.remove('logo-flash-auto');
                     STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     moveHeart('center', 'center', 0, false);
