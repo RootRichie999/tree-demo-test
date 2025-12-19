@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Gold Flash v28</title>
+    <title>AILIA Holiday Final Perfect v29</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -23,7 +23,8 @@
             color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
             text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); 
             letter-spacing: 6px; text-transform: uppercase;
-            position: relative; display: inline-block; /* 为了定位爱心 */
+            position: relative; display: inline-block;
+            transition: all 0.5s ease; /* 整体过渡 */
         }
 
         h1 { 
@@ -33,39 +34,40 @@
             opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; 
         }
 
-        /* --- 单字闪烁特效 --- */
-        .letter-span { display: inline-block; transition: all 0.3s ease; }
+        /* --- 1. 交互模式闪烁 (单字，不拉大，只变色发光) --- */
+        .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         
-        /* 金色闪烁激活态 */
-        .gold-flash {
-            color: #fff !important;
+        .gold-flash-interactive {
+            color: #fff !important; /* 纯白高光 */
             -webkit-text-fill-color: #fff !important;
-            text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 60px #ffaa00 !important;
-            transform: scale(1.3) translateY(-5px);
+            /* 强烈金光，但不改变大小 */
+            text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; 
+        }
+
+        /* --- 2. 自动播放结束闪烁 (整体，带一点点呼吸感) --- */
+        .logo-flash-auto {
+            color: #fff !important;
+            text-shadow: 0 0 20px #ff3377, 0 0 50px #ff3377, 0 0 80px #ffcc33 !important; /* 粉金交织 */
+            transform: scale(1.05); /* 整体极其轻微的呼吸，显着庄重 */
         }
 
         /* --- 魔法爱心 (HTML版) --- */
         #magic-heart {
-            position: fixed; /* 固定定位，方便飞来飞去 */
-            top: 50%; left: 50%; /* 初始居中 */
+            position: fixed; 
+            top: 50%; left: 50%; 
             width: 80px; height: 80px;
-            transform: translate(-50%, -50%) scale(0); /* 初始隐藏 */
+            transform: translate(-50%, -50%) scale(0);
             z-index: 30;
             pointer-events: none;
             filter: drop-shadow(0 0 15px #ff3377);
-            transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1); /* 优雅的飞行曲线 */
+            transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1);
         }
         
-        /* 这里的爱心用 CSS 画一个，保证绝对可见，不需要图片 */
         #magic-heart::before {
             content: "❤"; font-size: 80px; color: #ff3377;
             position: absolute; top: 0; left: 0;
             text-shadow: 0 0 20px #ff0055;
         }
-
-        /* 闪烁动画 */
-        .heart-pulse { animation: heartBeat 0.8s infinite; }
-        @keyframes heartBeat { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.3); } 100% { transform: translate(-50%, -50%) scale(1); } }
 
         /* --- 底部控制栏 --- */
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -84,7 +86,6 @@
         #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
         .zzz-particle { position: absolute; color: #fff; font-family: 'Comic Sans MS', cursive, sans-serif; font-weight: bold; opacity: 0; text-shadow: 0 0 3px #000; animation: floatZzz 3s linear forwards; }
         @keyframes floatZzz { 0% { opacity: 0; transform: translateY(10px) translateX(0) scale(0.4); } 20% { opacity: 0.8; } 80% { opacity: 0.4; } 100% { opacity: 0; transform: translateY(-50px) translateX(30px) scale(1.0); } }
-        
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
     </style>
     <script type="importmap">
@@ -133,10 +134,11 @@
             rotation: { x: 0, y: 0 }, time: 0,
             lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0,
             autoPhase: 'IDLE',
-            wasHandDetected: false // 用于检测交互上升沿
+            wasHandDetected: false 
         };
 
         const IDLE_THRESHOLD = 10000; // 测试10秒
+        // 时间轴
         const SHOWCASE_DURATION = 15;     
         const ABSORB_DURATION = 6;        
         const REFORM_DURATION = 3;        
@@ -162,16 +164,15 @@
             const z = document.createElement('div'); z.className = 'zzz-particle'; z.innerText = Math.random() > 0.5 ? 'Z' : 'z'; z.style.fontSize = (12 + Math.random() * 8) + 'px'; z.style.left = (Math.random() * 30) + 'px'; zzzContainer.appendChild(z); setTimeout(() => { z.remove(); }, 3000);
         }
 
-        // --- 核心：拆分文字并实现单字闪烁 ---
+        // --- 核心：拆分文字 ---
         function splitTextToSpans(elementId) {
             const el = document.getElementById(elementId);
             const text = el.innerText;
-            el.innerHTML = ''; // 清空
+            el.innerHTML = ''; 
             for (let i = 0; i < text.length; i++) {
                 const span = document.createElement('span');
                 span.innerText = text[i];
                 span.className = 'letter-span';
-                // 标记单数位 (1, 3, 5...) 即索引 0, 2, 4...
                 if (i % 2 === 0 && text[i].trim() !== '') {
                     span.dataset.isOdd = "true";
                 }
@@ -179,13 +180,12 @@
             }
         }
 
+        // --- 交互闪烁 (不拉大，只变色) ---
         function flashOddLetters() {
-            // 获取所有单数 span
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
             oddSpans.forEach(span => {
-                span.classList.add('gold-flash');
-                // 0.5秒后移除类，恢复原状
-                setTimeout(() => span.classList.remove('gold-flash'), 500);
+                span.classList.add('gold-flash-interactive');
+                setTimeout(() => span.classList.remove('gold-flash-interactive'), 400); // 短促有力
             });
         }
 
@@ -196,21 +196,14 @@
                 heartEl.style.transform = `translate(-50%, -50%) scale(0)`;
                 return;
             }
-            // 简单的坐标映射：将 WebGL 坐标映射到屏幕百分比 (简化版)
-            // x: -50 ~ 50 -> 0% ~ 100%
-            // y: -30 ~ 30 -> 100% ~ 0%
-            // 这里我们用绝对屏幕坐标控制：
-            // Center: top 50%, left 50%
-            // Logo pos: top 5%, left 55% (AILIA 的最后一个 A 附近)
             
             if (x === 'center') {
                 heartEl.style.top = '50%'; heartEl.style.left = '50%';
             } else if (x === 'logo') {
-                // 动态获取 AILIA 容器的位置
                 const headerRect = document.getElementById('header-company').getBoundingClientRect();
-                // 定位到最后一个字母右侧
-                heartEl.style.top = (headerRect.top + headerRect.height/2) + 'px';
-                heartEl.style.left = (headerRect.right + 20) + 'px';
+                // 修正：向上调整 Y 轴，确保与文字在一根线上 (大概 height * 0.4 的位置)
+                heartEl.style.top = (headerRect.top + headerRect.height * 0.4) + 'px';
+                heartEl.style.left = (headerRect.right + 15) + 'px'; // 稍微靠近一点
             }
             heartEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
@@ -235,7 +228,6 @@
         document.getElementById('team-input').addEventListener('change', (e) => { const files = e.target.files; if(!files.length) return; Array.from(files).forEach((f, index) => { const reader = new FileReader(); reader.onload = (ev) => { new THREE.TextureLoader().load(ev.target.result, (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t, false); }); }; reader.readAsDataURL(f); }); e.target.value = ''; });
 
         async function init() {
-            // 初始化文字拆分
             splitTextToSpans('header-company');
             splitTextToSpans('header-title');
 
@@ -259,7 +251,6 @@
             controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.6; 
             controls.enablePan = false; controls.minDistance = 20; controls.maxDistance = 80;
             mainGroup = new THREE.Group(); scene.add(mainGroup);
-            // 移除 3D Sprite 爱心，改用 HTML
         }
 
         function setupEnvironment() { const pmremGenerator = new THREE.PMREMGenerator(renderer); scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture; }
@@ -306,10 +297,8 @@
 
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // --- 吸入逻辑 ---
                         if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
                             if (STATE.autoPhaseTimer > this.absorbDelay) {
-                                // 目标设为世界中心 (0,0,0) - 我们会把 HTML 爱心放在屏幕中心对应位置
                                 const heartPos = new THREE.Vector3(0, 0, 0); 
                                 const dist = this.mesh.position.distanceTo(heartPos);
                                 if (dist > 0.5) {
@@ -323,6 +312,7 @@
                                 const bossAngle = STATE.rotation.y * 0.8; 
                                 if(this.isBoss) {
                                     target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
+                                    this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                                 } else {
                                     const totalPhotos = photoList.length; let progress = 0;
                                     if(totalPhotos > 1) {
@@ -373,7 +363,6 @@
                 let s = this.baseScale;
                 if (this.type === 'PHOTO' && mode === 'SCATTER') { 
                     if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
-                        // 距离中心 (0,0,0) 越近越小
                         const dist = this.mesh.position.length();
                         const scaleFactor = Math.min(1.0, Math.max(0.01, dist / 8.0));
                         if (STATE.autoPhaseTimer > this.absorbDelay) { s = s * 4.0 * scaleFactor; } 
@@ -427,9 +416,8 @@
 
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
-                // 有人互动，立即响应
+                // 上升沿检测：只在刚刚检测到手势的那一帧触发闪烁
                 if (!STATE.wasHandDetected) {
-                    // 上升沿：刚刚检测到手势 -> 触发闪烁
                     flashOddLetters();
                     STATE.wasHandDetected = true;
                 }
@@ -438,7 +426,8 @@
                 if(STATE.isAutoPlaying) {
                     STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     showSleepingSanta(false); 
-                    moveHeart(0, 0, 0, false); // 隐藏 HTML 爱心
+                    moveHeart(0, 0, 0, false);
+                    document.getElementById('header-company').classList.remove('logo-flash-auto'); // 停止自动闪烁
                 }
                 const audio = document.getElementById('bg-music');
                 if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
@@ -456,7 +445,7 @@
                 else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
             } else { 
                 STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
-                STATE.wasHandDetected = false; // 重置检测状态
+                STATE.wasHandDetected = false; // 重置
 
                 if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
                     STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
@@ -470,9 +459,6 @@
         function animate() {
             requestAnimationFrame(animate); const dt = clock.getDelta(); const time = clock.elapsedTime;
             
-            if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
-            if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
-
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
                 controls.autoRotate = false;
@@ -486,7 +472,6 @@
                     if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
                     STATE.rotation.y += dt * autoSpeed; mainGroup.rotation.y = STATE.rotation.y;
                     
-                    // 爱心预备：在展示快结束前3秒浮现
                     if (STATE.autoLoopTimer > SHOWCASE_DURATION - 3) {
                         moveHeart('center', 'center', 1, true); // 显示 HTML 爱心
                     } else {
@@ -496,7 +481,6 @@
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION) { 
                     STATE.autoPhase = 'ABSORB';
                     STATE.autoPhaseTimer = STATE.autoLoopTimer - SHOWCASE_DURATION;
-                    // 爱心搏动
                     const pulse = 1.0 + Math.sin(time * 10) * 0.1;
                     moveHeart('center', 'center', pulse, true);
                     STATE.rotation.y += dt * 0.2; mainGroup.rotation.y = STATE.rotation.y;
@@ -511,17 +495,19 @@
                     STATE.autoPhase = 'FINAL_ACT';
                     const actTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
                     if (actTime < 1.0) {
-                        heartEl.style.filter = "drop-shadow(0 0 30px white)"; // 闪光
+                        heartEl.style.filter = "drop-shadow(0 0 30px white)"; 
                     } else if (actTime < 1.5) {
-                        moveHeart('logo', 'logo', 0, false); // 消失
+                        moveHeart('logo', 'logo', 0, false); 
                     } else if (actTime < 2.5) {
-                        flashOddLetters(); // AILIA 闪烁
+                        // 自动播放结束：整个 Logo 闪烁
+                        document.getElementById('header-company').classList.add('logo-flash-auto');
                     }
                 }
                 else { 
+                    document.getElementById('header-company').classList.remove('logo-flash-auto');
                     STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     moveHeart('center', 'center', 0, false);
-                    heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; // 恢复颜色
+                    heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
                 }
             } else {
                 if(controls) controls.update(); 
@@ -529,6 +515,8 @@
             }
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, time));
+            if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
+            if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
             dissolveParticles.forEach(p => { if(p.life > 0) { p.mesh.position.add(p.velocity.clone().multiplyScalar(dt)); p.velocity.y += dt * 2; p.life -= dt * 1.5; p.mesh.material.opacity = p.life; p.mesh.scale.setScalar(p.life * 1.5); p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; } else { p.mesh.visible = false; } });
             composer.render();
         }
