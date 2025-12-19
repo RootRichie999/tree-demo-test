@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Fast-Paced v34</title>
+    <title>AILIA Holiday Final Narrative V35</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -23,11 +23,12 @@
         }
         h1 { margin-top: 20px; color: #f2eada; font-size: 52px; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
 
-        /* 交互闪烁 */
+        /* 交互模式：单字干脆闪烁 */
         .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
-        /* 自动结束闪烁 */
-        .logo-flash-auto { color: #fff !important; text-shadow: 0 0 20px #ff3377, 0 0 50px #ff3377, 0 0 80px #ffcc33 !important; transform: scale(1.05); }
+        
+        /* 自动模式：整体闪烁 (更强烈的回应感) */
+        .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
         /* HTML 爱心 */
         #magic-heart {
@@ -35,6 +36,7 @@
             transform: translate(-50%, -50%) scale(0);
             z-index: 30; pointer-events: none;
             filter: drop-shadow(0 0 15px #ff3377);
+            /* 贝塞尔曲线，飞行更优雅 */
             transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1), left 1.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s ease-out, opacity 0.5s ease;
         }
         #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
@@ -109,12 +111,11 @@
         // --- ⚠️⚠️⚠️ 自动播放等待时间：10秒 (测试) -> 正式请改 180000 ---
         const IDLE_THRESHOLD = 10000; 
 
-        // --- 时间轴 (已压缩等待时间) ---
+        // --- 完美叙事时间轴 ---
         const SHOWCASE_DURATION = 12;     
         const ABSORB_DURATION = 5;        
         const REFORM_DURATION = 3;        
-        // 核心修改：从18秒改为9秒，减少等待
-        const TREE_HOLD_DURATION = 9; 
+        const TREE_HOLD_DURATION = 12;    // 总待机 12秒，给足欣赏时间
 
         // 圣诞老人逻辑
         const santaContainer = document.getElementById('santa-container');
@@ -152,7 +153,7 @@
             }
         }
 
-        // --- 交互闪烁 ---
+        // --- 交互闪烁 (不拉大) ---
         function flashOddLetters() {
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
             oddSpans.forEach(span => {
@@ -161,7 +162,7 @@
             });
         }
 
-        // --- 爱心控制 & 缓存优化 ---
+        // --- 爱心控制 ---
         const heartEl = document.getElementById('magic-heart');
         let cachedLPos = null;
 
@@ -172,7 +173,7 @@
                 const lSpan = headerEl.children[2];
                 const lRect = lSpan.getBoundingClientRect();
                 cachedLPos = {
-                    // 向上提 65px，让爱心尖尖对齐 L 底部
+                    // 向上提 65px，对齐 L 底部
                     top: (lRect.bottom - 65) + 'px', 
                     left: (lRect.left + lRect.width / 2) + 'px'
                 };
@@ -483,7 +484,6 @@
                     if(STATE.mode !== 'TREE') { 
                         STATE.mode = 'TREE'; 
                         photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
-                        // 进入此阶段时计算一次 L 位置
                         updateLPosition(); 
                     }
                     moveHeart('logo', 'logo', 0.5, true); 
@@ -492,23 +492,25 @@
                     STATE.autoPhase = 'TREE_HOLD';
                     const holdTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
                     
+                    // --- 紧凑时间轴 ---
+                    // 0-4s: 静止展示树 (爱心停在L下)
                     if (holdTime < 4.0) {
-                        // 缩短等待：前4秒静止
                         moveHeart('logo', 'logo', 0.5, true); 
                         heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
                     }
-                    else if (holdTime < 5.0) {
-                        // 爱心闪烁
-                        heartEl.style.filter = "drop-shadow(0 0 30px white)"; 
+                    // 4.0s - 4.5s: 爱心闪光 (白色强光)
+                    else if (holdTime < 4.5) {
+                        heartEl.style.filter = "drop-shadow(0 0 50px white)"; 
                     }
-                    else if (holdTime < 6.0) {
-                        // 爱心消失
+                    // 4.2s (重叠): Logo 开始闪烁
+                    if (holdTime > 4.2 && holdTime < 4.4) { // 只触发一次添加类
+                         document.getElementById('header-company').classList.add('logo-flash-auto');
+                    }
+                    // 4.8s: 爱心消失
+                    if (holdTime > 4.8) {
                         moveHeart('logo', 'logo', 0, false); 
-                    } 
-                    else if (holdTime < 8.0) {
-                        // Logo 闪烁
-                        document.getElementById('header-company').classList.add('logo-flash-auto');
                     }
+                    // 后面 8 秒全是余韵 (Logo 保持发光一段时间然后慢慢变暗，或一直亮着直到重置)
                 }
                 else { 
                     document.getElementById('header-company').classList.remove('logo-flash-auto');
