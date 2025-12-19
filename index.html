@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Natural Flow v25</title>
+    <title>AILIA Holiday Director's Cut v26</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -13,7 +13,21 @@
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .company-header { position: absolute; top: 5%; width: 100%; text-align: center; color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); z-index: 20; letter-spacing: 6px; text-transform: uppercase; }
+        /* AILIA Logo 样式 - 增加闪烁动画支持 */
+        .company-header { 
+            position: absolute; top: 5%; width: 100%; text-align: center; 
+            color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
+            text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); 
+            z-index: 20; letter-spacing: 6px; text-transform: uppercase;
+            transition: all 0.3s;
+        }
+        /* Logo 闪烁激活态 */
+        .company-header.flash-active {
+            color: #fff;
+            text-shadow: 0 0 50px #ff66aa, 0 0 100px #ff66aa; /* 粉色强光 */
+            transform: scale(1.1);
+        }
+
         h1 { position: absolute; top: 18%; width: 100%; text-align: center; color: #f2eada; font-size: 52px; margin: 0; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
         
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
@@ -27,11 +41,7 @@
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
         
-        #santa-container {
-            position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none;
-            width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end;
-            opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; 
-        }
+        #santa-container { position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none; width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
         #santa-actor { width: 100%; height: auto; max-height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(1.2) contrast(1.1); }
         #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
         .zzz-particle { position: absolute; color: #fff; font-family: 'Comic Sans MS', cursive, sans-serif; font-weight: bold; opacity: 0; text-shadow: 0 0 3px #000; animation: floatZzz 3s linear forwards; }
@@ -45,7 +55,7 @@
 <body>
     <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic</div></div>
     <div id="canvas-container"></div>
-    <div id="ui-layer"><div class="company-header">AILIA</div><h1>Merry Christmas</h1></div>
+    <div id="ui-layer"><div id="ailia-logo" class="company-header">AILIA</div><h1>Merry Christmas</h1></div>
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
     <div id="controls-wrapper">
         <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
@@ -66,7 +76,7 @@
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'; 
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
-        const CONFIG = { colors: { bg: 0x000000, champagneGold: 0xffd966, deepGreen: 0x03180a, accentRed: 0x990000, sockRed: 0xcc2222, sockGreen: 0x228822, heartPink: 0xff66aa }, particles: { count: 1600, dustCount: 2000, snowCount: 200, treeHeight: 24, treeRadius: 8 }, camera: { z: 50 } };
+        const CONFIG = { colors: { bg: 0x000000, champagneGold: 0xffd966, deepGreen: 0x03180a, accentRed: 0x990000, sockRed: 0xcc2222, sockGreen: 0x228822, heartPink: 0xff3377 }, particles: { count: 1600, dustCount: 2000, snowCount: 200, treeHeight: 24, treeRadius: 8 }, camera: { z: 50 } };
         
         const STATE = { 
             mode: 'TREE', lastMode: 'TREE', 
@@ -76,11 +86,14 @@
             autoPhase: 'IDLE' 
         };
 
-        // --- 核心时间参数 ---
-        const IDLE_THRESHOLD = 10000;     // 10秒无操作进入自动模式 (正式用建议 180000)
-        const SHOWCASE_DURATION = 15;     // 漂浮展示时间 (秒) - 这是您想要延长的部分
-        const ABSORB_DURATION = 4;        // 吸入过程时间 (秒)
-        const REFORM_DURATION = 3;        // 重组时间 (秒)
+        // --- ⚠️ 自动播放等待时间 ---
+        const IDLE_THRESHOLD = 10000; // 测试用10秒
+
+        // --- 时间轴配置 ---
+        const SHOWCASE_DURATION = 20;     // 展示时间 (延长一点)
+        const ABSORB_DURATION = 5;        // 吸入时间 (给足慢慢变小的过程)
+        const REFORM_DURATION = 3;        // 重组时间
+        const FINAL_ACT_DURATION = 4;     // 爱心飞向Logo + 闪烁的时间
 
         // 圣诞老人逻辑
         const santaContainer = document.getElementById('santa-container');
@@ -112,11 +125,25 @@
         function createHeartTexture() {
             const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(128, 128, 20, 128, 128, 120);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 1)'); grad.addColorStop(0.4, 'rgba(255, 200, 200, 0.8)'); grad.addColorStop(1, 'rgba(255, 100, 100, 0)');
-            ctx.fillStyle = grad; ctx.beginPath();
-            ctx.moveTo(128, 70); ctx.bezierCurveTo(128, 47, 100, 35, 75, 35); ctx.bezierCurveTo(35, 35, 35, 82.5, 35, 82.5); ctx.bezierCurveTo(35, 115, 70, 152, 128, 200);
-            ctx.bezierCurveTo(186, 152, 221, 115, 221, 82.5); ctx.bezierCurveTo(221, 82.5, 221, 35, 181, 35); ctx.bezierCurveTo(156, 35, 128, 47, 128, 70); ctx.fill();
+            // 爱心光晕
+            const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 120);
+            grad.addColorStop(0, 'rgba(255, 200, 220, 1)'); 
+            grad.addColorStop(0.3, 'rgba(255, 100, 150, 0.9)'); 
+            grad.addColorStop(1, 'rgba(255, 50, 100, 0)');
+            ctx.fillStyle = grad; 
+            
+            // 画爱心
+            ctx.beginPath();
+            const s = 0.8; // 缩放因子
+            ctx.moveTo(128, 70*s + 30); 
+            ctx.bezierCurveTo(128, 47*s+30, 100*s+64, 35*s+30, 75*s+64, 35*s+30); 
+            ctx.bezierCurveTo(35*s+64, 35*s+30, 35*s+64, 82.5*s+30, 35*s+64, 82.5*s+30); 
+            ctx.bezierCurveTo(35*s+64, 115*s+30, 70*s+64, 152*s+30, 128, 200*s+30);
+            ctx.bezierCurveTo(186*s+64, 152*s+30, 221*s+64, 115*s+30, 221*s+64, 82.5*s+30); 
+            ctx.bezierCurveTo(221*s+64, 82.5*s+30, 221*s+64, 35*s+30, 181*s+64, 35*s+30); 
+            ctx.bezierCurveTo(156*s+64, 35*s+30, 128, 47*s+30, 128, 70*s+30); 
+            ctx.fill();
+            
             const texture = new THREE.CanvasTexture(canvas); texture.needsUpdate = true; return texture;
         }
 
@@ -154,10 +181,11 @@
             controls.enablePan = false; controls.minDistance = 20; controls.maxDistance = 80;
             mainGroup = new THREE.Group(); scene.add(mainGroup);
 
-            // 初始化爱心
-            const heartMat = new THREE.SpriteMaterial({ map: createHeartTexture(), color: 0xffeedd, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+            // 初始化大爱心
+            const heartMat = new THREE.SpriteMaterial({ map: createHeartTexture(), color: CONFIG.colors.heartPink, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
             heartSprite = new THREE.Sprite(heartMat);
-            heartSprite.scale.set(20, 20, 1); heartSprite.position.set(0, 5, 0); 
+            heartSprite.scale.set(0, 0, 1); // 初始大小为0
+            heartSprite.position.set(0, 5, 0); 
             scene.add(heartSprite); 
         }
 
@@ -187,10 +215,8 @@
                 this.randomOffset = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6);
                 const speedMult = (type === 'PHOTO') ? 0.2 : 2.0; 
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
-                
-                // --- 新增：吸收延迟属性 ---
-                // 赋予每个照片一个 0~1秒 之间的随机延迟，让它们被吸走时参差不齐
-                this.absorbDelay = Math.random() * 1.5; 
+                // 随机的吸入延迟
+                this.absorbDelay = Math.random() * 2.0; 
             }
             calculatePositions() {
                 const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
@@ -208,42 +234,50 @@
 
                 if (mode === 'SCATTER') {
                     if (this.type === 'PHOTO') {
-                        // --- 核心：自然吸入逻辑 ---
+                        // --- 1. 黑洞吸入逻辑 (Shrinking Vortex) ---
                         if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
-                            // 只有当吸入计时超过了自己的延迟时间，才开始动
+                            // 延迟启动
                             if (STATE.autoPhaseTimer > this.absorbDelay) {
-                                const heartWorldPos = new THREE.Vector3(0, 5, 0); // 爱心位置
+                                const heartPos = new THREE.Vector3(0, 5, 0);
+                                const dist = this.mesh.position.distanceTo(heartPos);
                                 
-                                // 螺旋吸入计算
-                                const dist = this.mesh.position.distanceTo(heartWorldPos);
-                                if (dist > 1.0) {
-                                    // 还没到中心，继续螺旋
-                                    const direction = heartWorldPos.clone().sub(this.mesh.position).normalize();
-                                    const spiral = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(5.0); // 切向力
-                                    target = heartWorldPos.clone().add(spiral); // 往中心偏切向移动
-                                    lerpSpeed = 2.5; // 吸入速度要快
+                                if (dist > 0.5) {
+                                    // 螺旋吸入
+                                    const dir = heartPos.clone().sub(this.mesh.position).normalize();
+                                    const spiralForce = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(2.0); // 旋转力
+                                    target = heartPos.clone().add(spiralForce); // 往切线方向走一点
+                                    lerpSpeed = 2.0; // 加速吸入
                                 } else {
-                                    // 到了中心，就在中心呆着
-                                    target = heartWorldPos;
-                                    lerpSpeed = 5.0;
+                                    target = heartPos; // 到达中心
                                 }
-                                this.mesh.lookAt(heartWorldPos);
+                                this.mesh.lookAt(heartPos);
                             } else {
-                                // 还没轮到我动，保持原来的螺旋漂浮位置
-                                // (复用下面的漂浮逻辑)
-                                lerpSpeed = 0.8;
-                                // ...此处代码复用下面的逻辑...
+                                // 还没轮到我吸入，保持原来的漂浮位置
+                                // (复用下面的漂浮计算代码)
                                 const bossAngle = STATE.rotation.y * 0.8; 
-                                // 简单起见，这里让它暂时保持原位
-                                target = this.mesh.position.clone(); 
+                                if(this.isBoss) {
+                                    target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
+                                } else {
+                                    // 重新计算原来的漂浮位置，保持画面连贯
+                                    const totalPhotos = photoList.length; let progress = 0;
+                                    if(totalPhotos > 1) {
+                                        let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
+                                        const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
+                                    }
+                                    const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+                                    const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
+                                    const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
+                                    const spread = 1.0 + progress * 1.5;
+                                    target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
+                                }
                             }
                         } 
+                        // --- 2. 正常展示逻辑 ---
                         else if (this.isBoss) {
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
-                            // 正常的优雅漂浮展示
                             const totalPhotos = photoList.length; let progress = 0;
                             if(totalPhotos > 1) {
                                 let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
@@ -259,10 +293,17 @@
                     } else { target = this.posScatter; }
                 } 
                 
-                this.mesh.position.lerp(target, lerpSpeed * dt);
+                // --- 移动执行 ---
+                // 吸入模式下，直接插值到目标，不使用阻尼，显得更干脆
+                if(STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB' && this.type === 'PHOTO') {
+                    this.mesh.position.lerp(target, lerpSpeed * dt);
+                } else {
+                    this.mesh.position.lerp(target, lerpSpeed * dt);
+                }
 
+                // --- 旋转与缩放 ---
                 if (mode === 'SCATTER') {
-                    if (!(this.type === 'PHOTO' && this.isBoss) && !(STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB')) {
+                    if (!(this.type === 'PHOTO' && this.isBoss) && !(STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB' && this.type === 'PHOTO')) {
                         if (this.type === 'PHOTO') { }
                         else { this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt; }
                     }
@@ -275,8 +316,12 @@
                 let s = this.baseScale;
                 if (this.type === 'PHOTO' && mode === 'SCATTER') { 
                     if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
-                        // 吸入时，大家一起变小消失
-                        s = 0.1;
+                        // 核心：距离中心越近，缩放越小 (Event Horizon Effect)
+                        const heartPos = new THREE.Vector3(0, 5, 0);
+                        const dist = this.mesh.position.distanceTo(heartPos);
+                        // 距离 10 处为 100% 大小，距离 0 处为 0%
+                        const scaleFactor = Math.min(1.0, Math.max(0.0, dist / 10.0));
+                        s = s * 4.0 * scaleFactor; 
                     } else {
                         if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0; 
                     }
@@ -330,7 +375,9 @@
                 if(STATE.isAutoPlaying) {
                     STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
                     showSleepingSanta(false); 
-                    heartSprite.opacity = 0; heartSprite.position.set(0, 40, -20); // 隐藏爱心
+                    heartSprite.opacity = 0; heartSprite.position.set(0, 40, -20);
+                    // 立即停止文字闪烁
+                    document.getElementById('ailia-logo').classList.remove('flash-active');
                 }
                 const audio = document.getElementById('bg-music');
                 if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
@@ -343,7 +390,8 @@
                 if(controls) controls.autoRotate = false; 
                 const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
                 if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
-                    STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); 
+                    STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; 
+                    shuffleTeamPhotos(); 
                 } 
                 else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
             } else { 
@@ -360,63 +408,91 @@
         function animate() {
             requestAnimationFrame(animate); const dt = clock.getDelta(); const time = clock.elapsedTime;
             
+            // --- 背景元素保持运动 (Continuous Motion) ---
+            // 无论是否吸入，雪花和尘埃都继续飘动
+            if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
+            if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
+
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
                 controls.autoRotate = false;
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) { audio.pause(); document.getElementById('music-status').innerText = "Auto (Muted)"; document.getElementById('music-status').style.opacity = 0.5; }
 
-                const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; // 自然变速
+                const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; 
 
-                // --- 完美节奏时间轴 ---
-                // 1. 展示阶段 (0s ~ SHOWCASE_DURATION)
+                // --- 导演版时间轴 ---
+                // 1. Showcase (0 - 15s): 律动展示
                 if (STATE.autoLoopTimer < SHOWCASE_DURATION) { 
                     STATE.autoPhase = 'SHOWCASE';
                     if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
                     STATE.rotation.y += dt * autoSpeed; mainGroup.rotation.y = STATE.rotation.y;
                     
-                    // 爱心预备：在展示快结束前3秒慢慢浮现
+                    // 爱心预备：在展示快结束前3秒慢慢变大并显现 (The Grand Heart)
                     if (STATE.autoLoopTimer > SHOWCASE_DURATION - 3) {
-                        heartSprite.opacity = THREE.MathUtils.lerp(heartSprite.opacity, 0.8, dt * 0.5);
-                        heartSprite.position.lerp(new THREE.Vector3(0, 5, 0), dt * 0.5);
+                        heartSprite.opacity = THREE.MathUtils.lerp(heartSprite.opacity, 1.0, dt * 0.8);
+                        heartSprite.scale.lerp(new THREE.Vector3(25, 25, 1), dt * 0.8); // 变大
+                        heartSprite.position.lerp(new THREE.Vector3(0, 5, 0), dt * 0.8);
                     } else {
                         heartSprite.opacity = 0; 
-                        heartSprite.position.set(0, 30, -10); // 藏在高处
+                        heartSprite.position.set(0, 30, -10); 
                     }
                 }
-                // 2. 吸入阶段 (SHOWCASE_DURATION ~ +ABSORB_DURATION)
+                // 2. Absorb (15 - 20s): 黑洞吸入
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION) { 
                     STATE.autoPhase = 'ABSORB';
-                    STATE.autoPhaseTimer = STATE.autoLoopTimer - SHOWCASE_DURATION; // 当前吸入阶段的时间
-                    
-                    // 爱心高亮
-                    heartSprite.opacity = 1;
-                    heartSprite.scale.setScalar(20 + Math.sin(time * 10) * 2); // 剧烈跳动
+                    STATE.autoPhaseTimer = STATE.autoLoopTimer - SHOWCASE_DURATION;
+                    // 爱心剧烈搏动
+                    const pulse = 1.0 + Math.sin(time * 10) * 0.2;
+                    heartSprite.scale.set(25 * pulse, 25 * pulse, 1);
+                    // 场景依然保持缓慢旋转
+                    STATE.rotation.y += dt * 0.2; mainGroup.rotation.y = STATE.rotation.y;
                 }
-                // 3. 重组阶段
+                // 3. Reform (20 - 23s): 重生
                 else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION) { 
                     STATE.autoPhase = 'REFORM';
                     if(STATE.mode !== 'TREE') { 
                         STATE.mode = 'TREE'; 
                         photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
                     }
-                    // 爱心飞走
-                    heartSprite.position.lerp(new THREE.Vector3(0, 40, -20), dt * 2.0);
-                    heartSprite.opacity = THREE.MathUtils.lerp(heartSprite.opacity, 0, dt * 2.0);
+                    // 爱心开始飞向 Logo 位置
+                    // AILIA 文字大约在屏幕顶部 5%，世界坐标 Y=20 左右
+                    heartSprite.position.lerp(new THREE.Vector3(0, 22, 0), dt * 3.0); 
+                    heartSprite.scale.lerp(new THREE.Vector3(5, 5, 1), dt * 3.0); // 变小
                 }
-                // 4. 循环
+                // 4. Final Act (23 - 27s): 终极互动
+                else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION + FINAL_ACT_DURATION) {
+                    STATE.autoPhase = 'FINAL_ACT';
+                    const actTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
+                    
+                    if (actTime < 1.0) {
+                        // 爱心闪烁
+                        const flash = Math.sin(actTime * 20) > 0;
+                        heartSprite.opacity = flash ? 1 : 0.5;
+                        heartSprite.material.color.setHex(0xffffff); // 变白光
+                    } else if (actTime < 1.5) {
+                        // 爱心消失
+                        heartSprite.opacity = 0;
+                    } else if (actTime < 2.5) {
+                        // AILIA 文字闪烁 (添加 CSS 类)
+                        document.getElementById('ailia-logo').classList.add('flash-active');
+                    } else {
+                        // 文字恢复
+                        document.getElementById('ailia-logo').classList.remove('flash-active');
+                    }
+                }
+                // 5. Reset
                 else { 
                     STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
+                    heartSprite.opacity = 0; heartSprite.position.set(0, 30, -10);
+                    heartSprite.material.color.setHex(CONFIG.colors.heartPink); // 颜色复原
                 }
             } else {
-                // 手动模式
                 if(controls) controls.update(); 
                 if (STATE.hand.detected) { const targetRotY = STATE.hand.x * Math.PI; STATE.rotation.y += (targetRotY - STATE.rotation.y) * 2.0 * dt; mainGroup.rotation.y = STATE.rotation.y; } else { STATE.rotation.y = mainGroup.rotation.y; }
             }
 
             particleSystem.forEach(p => p.update(dt, STATE.mode, time));
-            if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
-            if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
             dissolveParticles.forEach(p => { if(p.life > 0) { p.mesh.position.add(p.velocity.clone().multiplyScalar(dt)); p.velocity.y += dt * 2; p.life -= dt * 1.5; p.mesh.material.opacity = p.life; p.mesh.scale.setScalar(p.life * 1.5); p.mesh.rotation.x += dt*5; p.mesh.rotation.z += dt*5; } else { p.mesh.visible = false; } });
             composer.render();
         }
