@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Fix V41</title>
+    <title>AILIA Holiday Perfect V42</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -26,7 +26,7 @@
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
         .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* V37 原版 HTML 爱心 */
+        /* V37 核心：HTML 红心 */
         #magic-heart {
             position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
             transform: translate(-50%, -50%) scale(0);
@@ -59,7 +59,7 @@
     </script>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic V41</div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic V42</div></div>
     <div id="canvas-container"></div>
     <div id="ui-layer">
         <div class="header-container">
@@ -69,6 +69,7 @@
     </div>
     <div id="magic-heart"></div>
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
+    
     <div id="controls-wrapper">
         <label class="control-item boss-btn"><span class="icon-box">★</span><span class="text-box">Add Boss Photo (Top)</span><input type="file" id="boss-input" accept="image/*"></label>
         <label class="control-item"><span class="icon-box">＋</span><span class="text-box">Add Team Photos</span><input type="file" id="team-input" multiple accept="image/*"></label>
@@ -96,16 +97,15 @@
             rotation: { x: 0, y: 0 }, time: 0,
             lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0,
             autoPhase: 'IDLE',
-            wasHandDetected: false,
-            currentRoutine: 'A' 
+            wasHandDetected: false
         };
 
         const IDLE_THRESHOLD = 51000; 
 
-        // 流程A (V37原版)
-        const A_SHOWCASE = 12; const A_ABSORB = 5; const A_REFORM = 3; const A_HOLD = 9;
-        // 流程B (新增粒子爱心)
-        const B_SHOWCASE = 10; const B_MORPH = 3; const B_HOLD = 10; const B_REFORM = 3;
+        // --- 统一的时间轴 ---
+        const PHASE_SHOWCASE = 12; // 圣诞树展示
+        const PHASE_HEART = 10;    // 【合体时刻】: 照片吸入 + 粒子爱心包裹 (10秒)
+        const PHASE_REFORM = 3;    // 变回树
 
         const santaContainer = document.getElementById('santa-container');
         const zzzContainer = document.getElementById('zzz-container');
@@ -114,8 +114,7 @@
             if (show) {
                 santaContainer.style.opacity = '1';
                 if (!zzzInterval) { zzzInterval = setInterval(spawnZzz, 1500); spawnZzz(); }
-                const flowName = STATE.currentRoutine === 'A' ? "Classic Flow" : "Heart Flow";
-                document.getElementById('status-indicator').innerText = "Auto Loop: " + flowName;
+                document.getElementById('status-indicator').innerText = "Auto Loop Mode";
                 document.getElementById('status-indicator').style.opacity = 1;
             } else {
                 santaContainer.style.opacity = '0';
@@ -157,7 +156,6 @@
         let dissolveParticles = [], dissolveGeo, dissolveMat;
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture; 
         let photoList = [], musicPlaylist = [], currentTrackIndex = 0;
-        let photoPositionsB = []; // 存储流程B的随机位置
 
         window.toggleMusic = function() {
             const audio = document.getElementById('bg-music'); const status = document.getElementById('music-status');
@@ -188,7 +186,7 @@
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            // 修复泛白：曝光度改回 1.0 (V37原版是2.0太亮)
+            // 恢复 V37 曝光，避免照片太亮
             renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 1.0; 
             container.appendChild(renderer.domElement);
             controls = new OrbitControls(camera, renderer.domElement);
@@ -217,36 +215,13 @@
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
         function createInstancedDust() { const geo = new THREE.TetrahedronGeometry(0.12, 0); const mat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.6 }); dustSystem = new THREE.InstancedMesh(geo, mat, CONFIG.particles.dustCount); const dummy = new THREE.Object3D(); const speeds = []; for (let i = 0; i < CONFIG.particles.dustCount; i++) { const r = 15 + Math.random() * 35; const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); dummy.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)); const scale = 0.5 + Math.random(); dummy.scale.set(scale, scale, scale); dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); speeds.push({ ySpeed: 0.02 + Math.random() * 0.05, initialPos: dummy.position.clone() }); } dustSystem.userData = { speeds: speeds, dummy: dummy }; mainGroup.add(dustSystem); }
 
-        // 生成一个不重叠的随机位置 (用于流程B)
-        function getNonOverlappingPosition(existingPositions, minDistance = 2.0) {
-            let attempts = 0;
-            let pos = new THREE.Vector3();
-            while(attempts < 50) {
-                // 在爱心内部随机
-                const x = (Math.random() - 0.5) * 12;
-                const y = (Math.random() - 0.5) * 10 + 2; // 稍微抬高
-                const z = (Math.random() - 0.5) * 6;
-                // 简单的爱心包围盒判断 (粗略)
-                if (Math.abs(x) + Math.abs(z) < 12 && Math.abs(y-2) < 8) {
-                    pos.set(x, y, z);
-                    let overlap = false;
-                    for (let existing of existingPositions) {
-                        if (pos.distanceTo(existing) < minDistance) { overlap = true; break; }
-                    }
-                    if (!overlap) return pos;
-                }
-                attempts++;
-            }
-            return pos; // fallback
-        }
-
         class Particle {
             constructor(mesh, type, photoIdx = -1, isBoss = false, globalIndex = 0) { 
                 this.mesh = mesh; this.type = type; this.photoIdx = photoIdx; this.isBoss = isBoss; 
                 this.globalIndex = globalIndex;
                 this.posTree = new THREE.Vector3(); 
                 this.posScatter = new THREE.Vector3(); 
-                this.posParticleHeart = new THREE.Vector3(); 
+                this.posHeart = new THREE.Vector3(); // 粒子爱心位置
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions(); 
                 this.isDissolving = false; 
@@ -257,7 +232,7 @@
             }
             
             calculatePositions() {
-                // 1. 圣诞树 (V37原版逻辑)
+                // 1. 圣诞树 (V37原版算法，确保照片挂在树上)
                 const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
                 let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
                 const angle = t * 50 * Math.PI + Math.random() * Math.PI; const r = rMax * (0.8 + Math.random() * 0.4); 
@@ -268,22 +243,17 @@
                 const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
                 this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
 
-                // 3. 粒子爱心 (流程B)
-                if (this.type === 'PHOTO') {
-                    // 照片在中间，随机但不重叠
-                    // 位置在 update 里首次进入 B 流程时动态分配，或者这里预计算一个
-                    // 暂时这里设为 0，我们在 addPhotoToScene 里统一计算好存入 photoPositionsB
-                    this.posParticleHeart.set(0, 0, 0); 
-                } else {
-                    const total = CONFIG.particles.count;
-                    const tHeart = (this.globalIndex / total) * Math.PI * 2;
-                    let hx = 16 * Math.pow(Math.sin(tHeart), 3);
-                    let hy = 13 * Math.cos(tHeart) - 5 * Math.cos(2 * tHeart) - 2 * Math.cos(3 * tHeart) - Math.cos(4 * tHeart);
-                    const scale = 0.9; 
-                    const fuzz = 0.8 + Math.random() * 0.4;
-                    const zDepth = (Math.random() - 0.5) * 6;
-                    this.posParticleHeart.set(hx * scale * fuzz, hy * scale * fuzz + 2, zDepth);
-                }
+                // 3. 粒子爱心 (包裹着中间照片)
+                // 仅用于非照片粒子组成大爱心
+                const total = CONFIG.particles.count;
+                const tHeart = (this.globalIndex / total) * Math.PI * 2;
+                let hx = 16 * Math.pow(Math.sin(tHeart), 3);
+                let hy = 13 * Math.cos(tHeart) - 5 * Math.cos(2 * tHeart) - 2 * Math.cos(3 * tHeart) - Math.cos(4 * tHeart);
+                // 扩大一点，包裹住里面的内容
+                const scale = 1.2; 
+                const fuzz = 0.8 + Math.random() * 0.4;
+                const zDepth = (Math.random() - 0.5) * 8;
+                this.posHeart.set(hx * scale * fuzz, hy * scale * fuzz + 2, zDepth);
             }
 
             update(dt, mode, time) {
@@ -292,76 +262,61 @@
                 let target = this.posTree;
                 let lerpSpeed = 0.8;
 
-                if (mode === 'SCATTER') {
-                    // 流程A：吸入逻辑
+                if (mode === 'HEART_MOMENT') {
+                    // === 合体时刻 ===
                     if (this.type === 'PHOTO') {
-                        if (STATE.isAutoPlaying && STATE.currentRoutine === 'A' && STATE.autoPhase === 'ABSORB') {
-                            if (STATE.autoPhaseTimer > this.absorbDelay) {
-                                const heartPos = new THREE.Vector3(0, 0, 0); 
-                                const dist = this.mesh.position.distanceTo(heartPos);
-                                if (dist > 0.5) {
-                                    const dir = heartPos.clone().sub(this.mesh.position).normalize();
-                                    const spiralForce = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(2.0); 
-                                    target = heartPos.clone().add(spiralForce); 
-                                    lerpSpeed = 2.0; 
-                                } else { target = heartPos; }
-                                this.mesh.lookAt(heartPos);
-                            } else {
-                                // 吸入前保持树的形态
-                                const bossAngle = STATE.rotation.y * 0.8;
-                                if(this.isBoss) target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
-                                else target = this.posTree; // 修正：吸入前保持挂在树上的位置
-                            }
+                        // 照片：执行 V37 的吸入逻辑
+                        if (STATE.autoPhaseTimer > this.absorbDelay) {
+                            const heartPos = new THREE.Vector3(0, 0, 0); 
+                            const dist = this.mesh.position.distanceTo(heartPos);
+                            if (dist > 0.5) {
+                                const dir = heartPos.clone().sub(this.mesh.position).normalize();
+                                const spiralForce = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(2.0); 
+                                target = heartPos.clone().add(spiralForce); 
+                                lerpSpeed = 2.0; 
+                            } else { target = heartPos; }
+                            this.mesh.lookAt(heartPos);
                         } else {
-                            // 交互模式的手势散开
-                             if(this.isBoss) {
-                                const bossAngle = STATE.rotation.y * 0.8;
-                                target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
-                            } else {
-                                // 普通照片散开
-                                const totalPhotos = photoList.length; let progress = 0;
-                                if(totalPhotos > 1) {
-                                    let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
-                                    const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
-                                }
-                                const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                                const idealX = Math.sin(baseAngle) * baseR; const idealZ = Math.cos(baseAngle) * baseR; const idealY = baseH;
-                                target = new THREE.Vector3(idealX + this.randomOffset.x, idealY + this.randomOffset.y, idealZ + this.randomOffset.z);
-                                this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
+                            // 还没被吸入时，保持树的位置，不要乱飞
+                            target = this.posTree; 
+                        }
+                    } else {
+                        // 粒子：变成爱心形状
+                        target = this.posHeart;
+                        lerpSpeed = 1.0;
+                        this.mesh.rotation.x += this.spinSpeed.x * dt; 
+                        this.mesh.rotation.y += this.spinSpeed.y * dt;
+                    }
+                }
+                else if (mode === 'SCATTER') {
+                    // 手势交互散开模式
+                    if (this.type === 'PHOTO') {
+                         if(this.isBoss) {
+                            const bossAngle = STATE.rotation.y * 0.8;
+                            target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
+                        } else {
+                            const totalPhotos = photoList.length; let progress = 0;
+                            if(totalPhotos > 1) {
+                                let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
+                                const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
+                            const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+                            const idealX = Math.sin(baseAngle) * baseR; const idealZ = Math.cos(baseAngle) * baseR; const idealY = baseH;
+                            target = new THREE.Vector3(idealX + this.randomOffset.x, idealY + this.randomOffset.y, idealZ + this.randomOffset.z);
+                            this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
                         }
                     } else { target = this.posScatter; }
                 } 
-                else if (mode === 'PARTICLE_HEART') {
-                    // 流程B：粒子爱心
-                    if (this.type === 'PHOTO') {
-                        // 使用预生成的随机位置
-                        if (this.assignedHeartPos) target = this.assignedHeartPos;
-                        else target = new THREE.Vector3(0, 0, 0);
-                        
-                        // 关键修正：始终正对屏幕
-                        // 因为 mainGroup 在旋转 (STATE.rotation.y)，我们需要逆向旋转照片
-                        this.mesh.rotation.set(0, -STATE.rotation.y, 0); 
-                        
-                        lerpSpeed = 1.0;
-                    } else {
-                        target = this.posParticleHeart;
-                        this.mesh.rotation.x += this.spinSpeed.x * dt; 
-                        this.mesh.rotation.y += this.spinSpeed.y * dt;
-                        lerpSpeed = 1.0;
-                    }
-                }
                 else if (mode === 'TREE') {
-                    // V37 原版 Tree
-                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*lerpSpeed);
-                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*lerpSpeed);
+                    // === 圣诞树模式 (修复：严格回归 V37) ===
                     if(this.type === 'PHOTO') { 
                         if (this.isBoss) {
+                            // Boss 照片：Billboarding (永远看镜头)
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
-                            // 团队照片螺旋排列 - 修复：确保位置是准确的螺旋线
+                            // 团队照片：挂在树上
                             const totalPhotos = photoList.length; let progress = 0;
                             if(totalPhotos > 1) {
                                 let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
@@ -370,37 +325,35 @@
                             const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
                             const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
                             const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
-                            const spread = 1.0 + progress * 1.5;
-                            target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
+                            // 注意：这里没有 randomOffset * spread，保证挂得整齐
+                            target = new THREE.Vector3(idealX, idealY + this.randomOffset.y * 0.2, idealZ);
                             this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
                         }
                     } else { 
+                        // 普通装饰粒子
                         target = this.posTree; 
+                        this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*lerpSpeed);
+                        this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*lerpSpeed);
                         this.mesh.rotation.y += 0.5 * dt; 
                     }
                 }
                 
                 this.mesh.position.lerp(target, lerpSpeed * dt);
 
-                // --- 修复：大小控制 ---
+                // --- 修复：大小控制 (严格回归) ---
                 let s = this.baseScale;
                 if (this.type === 'PHOTO') { 
-                    if (mode === 'PARTICLE_HEART') {
-                         s = this.baseScale * 4.0; // 只有在爱心模式才变大
-                    } else if (mode === 'SCATTER' && STATE.currentRoutine === 'A' && STATE.autoPhase === 'ABSORB') {
-                        // 只有在流程A吸入时才变大
+                    if (mode === 'HEART_MOMENT') {
+                        // 吸入时变小 (V37逻辑)
                         const dist = this.mesh.position.length();
                         const scaleFactor = Math.min(1.0, Math.max(0.01, dist / 8.0));
                         if (STATE.autoPhaseTimer > this.absorbDelay) { s = s * 4.0 * scaleFactor; } 
-                        else { 
-                            // 吸入前保持树上的大小 (小)
-                            s = this.baseScale; 
-                        }
+                        else { s = this.baseScale; } // 吸入前保持小尺寸
                     } else if (mode === 'TREE') {
-                        // 树模式：保持原始大小 (挂件大小)
+                        // 树模式：保持挂件大小 (小)
                         s = this.baseScale; 
                     } else {
-                        // 交互散开模式
+                        // 交互散开模式 (大)
                         if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0;
                     }
                 }
@@ -438,19 +391,14 @@
             const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.2, roughness: 0.5 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 0.6, roughness: 0.3 });
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); 
-            // 修复泛白：metalness 0.1
+            // 修复泛白
             const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6, metalness: 0.1 }); 
             const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
-            // 默认小尺寸 0.8
+            // 修复：默认小尺寸 0.8 (挂件大小)
             const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
             let photoIdx; if (isBoss) { photoIdx = 0; } else { photoIdx = photoList.length; }
             const particle = new Particle(group, 'PHOTO', photoIdx, isBoss, Math.floor(Math.random() * CONFIG.particles.count));
-            
-            // 为流程B预先分配一个随机不重叠位置
-            particle.assignedHeartPos = getNonOverlappingPosition(photoPositionsB);
-            photoPositionsB.push(particle.assignedHeartPos);
-
             if (isBoss) photoList.unshift(particle); else photoList.push(particle);
             particleSystem.push(particle);
         }
@@ -483,7 +431,6 @@
                 STATE.wasHandDetected = false; 
                 if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
                     STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; 
-                    STATE.currentRoutine = 'A'; // 默认从A开始
                     STATE.autoPhase = 'SHOWCASE'; 
                     showSleepingSanta(true); 
                 }
@@ -503,67 +450,46 @@
                 controls.autoRotate = false;
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) { audio.pause(); document.getElementById('music-status').innerText = "Auto (Muted)"; document.getElementById('music-status').style.opacity = 0.5; }
-                const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; 
 
-                if (STATE.currentRoutine === 'A' && STATE.autoPhase === 'SHOWCASE') STATE.rotation.y += dt * autoSpeed; 
-                else if (STATE.currentRoutine === 'A' && STATE.autoPhase === 'ABSORB') STATE.rotation.y += dt * 0.2; 
-                else STATE.rotation.y += dt * 0.15; 
+                const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; 
+                // 统一旋转速度
+                if (STATE.autoPhase === 'SHOWCASE') STATE.rotation.y += dt * autoSpeed; 
+                else STATE.rotation.y += dt * 0.2; 
                 mainGroup.rotation.y = STATE.rotation.y;
 
-                if (STATE.currentRoutine === 'A') {
-                    if (STATE.autoLoopTimer < A_SHOWCASE) { 
-                        STATE.autoPhase = 'SHOWCASE';
-                        if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
-                        if (STATE.autoLoopTimer > A_SHOWCASE - 3) moveHeart('center', 'center', 1, true); 
-                        else moveHeart('center', 'center', 0, false);
+                // === 唯一的自动播放流程 ===
+                if (STATE.autoLoopTimer < PHASE_SHOWCASE) { 
+                    STATE.autoPhase = 'SHOWCASE';
+                    // 保持树的形态
+                    if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; }
+                    
+                    // 预告：在展示最后3秒出现红心
+                    if (STATE.autoLoopTimer > PHASE_SHOWCASE - 3) moveHeart('center', 'center', 1, true); 
+                    else moveHeart('center', 'center', 0, false);
+                }
+                else if (STATE.autoLoopTimer < PHASE_SHOWCASE + PHASE_HEART) { 
+                    // === 合体时刻 (吸入 + 粒子爱心) ===
+                    STATE.autoPhase = 'HEART_MOMENT';
+                    STATE.mode = 'HEART_MOMENT'; // 切换到合体模式
+                    STATE.autoPhaseTimer = STATE.autoLoopTimer - PHASE_SHOWCASE;
+                    
+                    const pulse = 1.0 + Math.sin(time * 10) * 0.1;
+                    moveHeart('center', 'center', pulse, true);
+                }
+                else if (STATE.autoLoopTimer < PHASE_SHOWCASE + PHASE_HEART + PHASE_REFORM) { 
+                    // === 变回树 ===
+                    STATE.autoPhase = 'REFORM';
+                    if(STATE.mode !== 'TREE') { 
+                        STATE.mode = 'TREE'; 
+                        photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
+                        updateLPosition(); 
                     }
-                    else if (STATE.autoLoopTimer < A_SHOWCASE + A_ABSORB) { 
-                        STATE.autoPhase = 'ABSORB';
-                        STATE.autoPhaseTimer = STATE.autoLoopTimer - A_SHOWCASE;
-                        const pulse = 1.0 + Math.sin(time * 10) * 0.1;
-                        moveHeart('center', 'center', pulse, true);
-                    }
-                    else if (STATE.autoLoopTimer < A_SHOWCASE + A_ABSORB + A_REFORM) { 
-                        STATE.autoPhase = 'REFORM';
-                        if(STATE.mode !== 'TREE') { 
-                            STATE.mode = 'TREE'; 
-                            photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
-                            updateLPosition(); 
-                        }
-                        moveHeart('logo', 'logo', 0.5, true); 
-                    }
-                    else if (STATE.autoLoopTimer < A_SHOWCASE + A_ABSORB + A_REFORM + A_HOLD) {
-                        STATE.autoPhase = 'TREE_HOLD';
-                        const holdTime = STATE.autoLoopTimer - (A_SHOWCASE + A_ABSORB + A_REFORM);
-                        if (holdTime < 4.0) { moveHeart('logo', 'logo', 0.5, true); heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; }
-                        else if (holdTime < 4.5) { heartEl.style.filter = "drop-shadow(0 0 50px white)"; }
-                        if (holdTime > 4.2 && holdTime < 4.4) document.getElementById('header-company').classList.add('logo-flash-auto');
-                        if (holdTime > 4.8) moveHeart('logo', 'logo', 0, false);
-                        if (holdTime > 5.0) document.getElementById('header-company').classList.remove('logo-flash-auto');
-                    } else {
-                        STATE.currentRoutine = 'B'; STATE.autoLoopTimer = 0;
-                        document.getElementById('status-indicator').innerText = "Auto Loop: Heart Flow";
-                        document.getElementById('header-company').classList.remove('logo-flash-auto');
-                        moveHeart('center', 'center', 0, false);
-                    }
-                } 
+                    moveHeart('logo', 'logo', 0.5, true); 
+                }
                 else {
-                    if (STATE.autoLoopTimer < B_SHOWCASE) {
-                        STATE.autoPhase = 'SHOWCASE'; STATE.mode = 'TREE'; 
-                    }
-                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH) {
-                        STATE.autoPhase = 'MORPH'; STATE.mode = 'PARTICLE_HEART'; 
-                    }
-                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH + B_HOLD) {
-                        STATE.autoPhase = 'HOLD'; STATE.mode = 'PARTICLE_HEART';
-                    }
-                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH + B_HOLD + B_REFORM) {
-                        STATE.autoPhase = 'REFORM';
-                        if(STATE.mode !== 'TREE') { STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
-                    } else {
-                        STATE.currentRoutine = 'A'; STATE.autoLoopTimer = 0;
-                        document.getElementById('status-indicator').innerText = "Auto Loop: Classic Flow";
-                    }
+                    // 重置循环
+                    STATE.autoLoopTimer = 0;
+                    moveHeart('center', 'center', 0, false);
                 }
 
             } else {
