@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Deployment V38.1 (Fix)</title>
+    <title>AILIA Holiday V39 (Heart Core)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -15,41 +15,19 @@
         
         /* 标题容器 */
         .header-container { position: absolute; top: 5%; width: 100%; text-align: center; z-index: 20; display: flex; flex-direction: column; align-items: center; }
-        
-        /* AILIA 文字 */
-        .company-header { 
-            color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
-            text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); 
-            letter-spacing: 6px; text-transform: uppercase;
-            position: relative; display: inline-block;
-            transition: all 0.3s ease; 
-        }
-        
-        /* Merry Christmas 文字 */
+        .company-header { color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); letter-spacing: 6px; text-transform: uppercase; position: relative; display: inline-block; transition: all 0.3s ease; }
         h1 { margin-top: 20px; color: #f2eada; font-size: 52px; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
 
-        /* 交互模式：单字闪烁 */
+        /* 交互反馈 */
         .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
-        
-        /* 自动模式：整体闪烁 */
-        .logo-flash-auto { 
-            color: #fff !important; 
-            text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; 
-            transform: scale(1.1); 
-        }
+        .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* HTML 爱心 */
-        #magic-heart {
-            position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
-            transform: translate(-50%, -50%) scale(0);
-            z-index: 30; pointer-events: none;
-            filter: drop-shadow(0 0 15px #ff3377);
-            transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1), left 1.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s ease-out, opacity 0.5s ease;
-        }
+        /* HTML 爱心 (UI) */
+        #magic-heart { position: fixed; top: 50%; left: 50%; width: 80px; height: 80px; transform: translate(-50%, -50%) scale(0); z-index: 30; pointer-events: none; filter: drop-shadow(0 0 15px #ff3377); transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1), left 1.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s ease-out, opacity 0.5s ease; }
         #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
 
-        /* 底部控制栏 */
+        /* 控制栏 */
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
         .control-item { display: flex; align-items: center; gap: 12px; color: #d4af37; cursor: pointer; opacity: 0.7; transition: all 0.3s ease; }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
@@ -61,7 +39,7 @@
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
         
-        /* 圣诞老人容器 */
+        /* 圣诞老人 */
         #santa-container { position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none; width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
         #santa-actor { width: 100%; height: auto; max-height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(1.2) contrast(1.1); }
         #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
@@ -74,7 +52,7 @@
     </script>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><div class="loader-text">Restoring Beauty V38.1</div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading V39 Heart Core</div></div>
     <div id="canvas-container"></div>
     
     <div id="ui-layer">
@@ -85,7 +63,6 @@
     </div>
 
     <div id="magic-heart"></div>
-
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
     
     <div id="controls-wrapper">
@@ -148,9 +125,7 @@
                 const span = document.createElement('span');
                 span.innerText = text[i];
                 span.className = 'letter-span';
-                if (i % 2 === 0 && text[i].trim() !== '') {
-                    span.dataset.isOdd = "true";
-                }
+                if (i % 2 === 0 && text[i].trim() !== '') span.dataset.isOdd = "true";
                 el.appendChild(span);
             }
         }
@@ -243,13 +218,13 @@
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
         function createInstancedDust() { const geo = new THREE.TetrahedronGeometry(0.12, 0); const mat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.6 }); dustSystem = new THREE.InstancedMesh(geo, mat, CONFIG.particles.dustCount); const dummy = new THREE.Object3D(); const speeds = []; for (let i = 0; i < CONFIG.particles.dustCount; i++) { const r = 15 + Math.random() * 35; const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); dummy.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)); const scale = 0.5 + Math.random(); dummy.scale.set(scale, scale, scale); dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); speeds.push({ ySpeed: 0.02 + Math.random() * 0.05, initialPos: dummy.position.clone() }); } dustSystem.userData = { speeds: speeds, dummy: dummy }; mainGroup.add(dustSystem); }
 
-        // --- 核心修正：Particle 类 ---
+        // --- 核心：Particle (V39: Heart Core) ---
         class Particle {
             constructor(mesh, type, photoIdx = -1, isBoss = false) { 
                 this.mesh = mesh; this.type = type; this.photoIdx = photoIdx; this.isBoss = isBoss; 
                 this.posTree = new THREE.Vector3(); 
                 this.posScatter = new THREE.Vector3(); 
-                this.posHeart = new THREE.Vector3();
+                this.posHeart = new THREE.Vector3(); // 爱心位置
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions(); 
                 this.isDissolving = false; 
@@ -258,53 +233,27 @@
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
             }
             calculatePositions() {
-                // 1. 树形坐标计算 (FIX: 照片使用固定螺旋轨迹，不再随机)
-                if (this.type === 'PHOTO') {
-                    // 照片特殊逻辑：螺旋排列
-                    const totalPhotos = Math.max(1, photoList.length);
-                    // 找出当前是第几张
-                    let idx = 0;
-                    if (this.isBoss) { idx = 0; }
-                    else {
-                        // 简单的查找索引
-                        idx = photoList.indexOf(this); 
-                        if(idx === -1) idx = 0;
-                    }
-                    
-                    if (this.isBoss) {
-                        this.posTree.set(0, CONFIG.particles.treeHeight/2 + 2, 0); // Boss 在树顶
-                    } else {
-                        // 螺旋算法
-                        const progress = idx / totalPhotos; 
-                        const h = CONFIG.particles.treeHeight;
-                        const y = (progress * h * 0.8) - h/2 + 2; // 分布在树干中间
-                        const r = CONFIG.particles.treeRadius * (1.0 - progress) * 0.8 + 2.0; 
-                        const angle = progress * Math.PI * 8; // 绕4圈
-                        this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-                    }
-                } else {
-                    // 普通粒子随机分布
-                    const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
-                    let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
-                    const angle = t * 50 * Math.PI + Math.random() * Math.PI; const r = rMax * (0.8 + Math.random() * 0.4); 
-                    this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-                }
+                // 1. 树形 (V37原版逻辑)
+                const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
+                let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
+                const angle = t * 50 * Math.PI + Math.random() * Math.PI; const r = rMax * (0.8 + Math.random() * 0.4); 
+                this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
 
-                // 2. 散落 (保持不变)
+                // 2. 散落 (V37原版逻辑)
                 let rScatter = (12 + Math.random()*20);
                 const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
                 this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
 
-                // 3. 爱心 (FIX: 照片不参与心形堆积，而是形成外环)
+                // 3. 爱心形态 (V39 Core)
                 if (this.type === 'PHOTO') {
-                     // 照片形成一个水平圆环，环绕爱心
-                     const totalPhotos = Math.max(1, photoList.length);
-                     let idx = photoList.indexOf(this); if(idx === -1) idx = 0;
-                     const angle = (idx / totalPhotos) * Math.PI * 2;
-                     const radius = 18; // 离心远一点
-                     this.posHeart.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+                    // FIX: 照片在爱心内部随机漂浮 (Cloud Effect)
+                    // 使用球体内部随机坐标，半径较小 (R=6)
+                    const u = Math.random(); const v = Math.random();
+                    const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
+                    const r = 6.0 * Math.cbrt(Math.random()); // 立方根分布，避免聚集圆心
+                    this.posHeart.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
                 } else {
-                    // 粒子组成心形
+                    // 粒子组成爱心外壳 (Shell Effect)
                     const ht = Math.random() * Math.PI * 2; 
                     const heartScale = 1.2; 
                     const hx = 16 * Math.pow(Math.sin(ht), 3);
@@ -321,14 +270,13 @@
 
                 if (mode === 'SCATTER') {
                     target = this.posScatter; lerpSpeed = 0.8;
-                    // 照片散落时仍保留特殊展示逻辑
+                    // V37 散落逻辑：Boss置顶，员工环绕
                     if (this.type === 'PHOTO') {
                          if (this.isBoss) {
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
-                            // 保持 V37 的 Scatter 逻辑
                             const totalPhotos = photoList.length; let progress = 0;
                             if(totalPhotos > 1) {
                                 let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
@@ -345,13 +293,15 @@
                 } else if (mode === 'HEART') {
                     target = this.posHeart; lerpSpeed = 1.2;
                     if (this.type === 'PHOTO') {
-                        // 在 Heart 模式下，照片面向圆心
-                        this.mesh.lookAt(0, 0, 0);
-                        this.mesh.rotation.y += Math.PI; // 矫正朝向
+                        // 照片漂浮动效
+                        const floatY = Math.sin(time * 0.5 + this.randomOffset.x) * 1.5;
+                        target = new THREE.Vector3(this.posHeart.x, this.posHeart.y + floatY, this.posHeart.z);
+                        // 始终面向摄像机，确保可见
+                        this.mesh.lookAt(camera.position.x, camera.position.y, camera.position.z);
                     }
                 } else { // TREE
                     target = this.posTree;
-                    // FIX: 树形模式下，照片必须朝外
+                    // 树形模式下，照片面向外
                     if (this.type === 'PHOTO') {
                         this.mesh.lookAt(0, target.y, 0); 
                         this.mesh.rotation.y += Math.PI;
@@ -371,9 +321,12 @@
                 }
                 
                 let s = this.baseScale;
-                // FIX: 缩放倍数从 4.0 降为 2.5，避免“巨大”
-                if (this.type === 'PHOTO' && mode !== 'SCATTER') { 
-                    if (this.isBoss) s = this.baseScale * 4.0; else s = this.baseScale * 2.5; 
+                // 照片大小控制：散开时小一点，展示时大一点
+                if (this.type === 'PHOTO') { 
+                    if (mode === 'SCATTER') s = this.baseScale * 2.5;
+                    else if (mode === 'HEART') s = this.baseScale * 2.0; // 在心里不要太大
+                    else s = this.baseScale * 4.0; // 在树上大一点
+                    if (this.isBoss) s *= 1.5;
                 }
                 this.mesh.scale.lerp(new THREE.Vector3(s,s,s), lerpSpeed * 2 * dt);
             }
@@ -402,7 +355,7 @@
             const isRedFrame = !isBoss && Math.random() > 0.7; 
             const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.4 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
-            // 保持材质修复：哑光
+            // V38 修复的哑光材质：清晰不反光
             const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.05, envMapIntensity: 0.2, emissive: 0x000000 }); 
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
@@ -411,8 +364,6 @@
             const particle = new Particle(group, 'PHOTO', photoIdx, isBoss);
             if (isBoss) photoList.unshift(particle); else photoList.push(particle);
             particleSystem.push(particle);
-            
-            // FIX: 新增照片后立即重新计算所有照片位置，确保螺旋排列正确
             photoList.forEach(p => p.calculatePositions());
         }
         
@@ -460,16 +411,20 @@
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) { audio.pause(); document.getElementById('music-status').innerText = "Auto (Muted)"; document.getElementById('music-status').style.opacity = 0.5; }
 
+                // --- 自动播放流程 (V39 Update) ---
                 if (STATE.autoLoopTimer < 5.0) { 
+                    // 1. 散开
                     if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
                     STATE.rotation.y += dt * 0.3; 
                 }
                 else if (STATE.autoLoopTimer < 13.0) { 
+                    // 2. 聚合成爱心 + 照片内悬浮
                     if(STATE.mode !== 'HEART') { STATE.mode = 'HEART'; }
                     STATE.rotation.y += dt * 0.5; 
                     moveHeart('center', 'center', 0, false); 
                 }
                 else if (STATE.autoLoopTimer < 21.0) { 
+                    // 3. 变回圣诞树
                     if(STATE.mode !== 'TREE') { 
                         STATE.mode = 'TREE'; 
                         photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
