@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Perfect V42</title>
+    <title>AILIA Holiday Final V43</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -26,7 +26,6 @@
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
         .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* V37 核心：HTML 红心 */
         #magic-heart {
             position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
             transform: translate(-50%, -50%) scale(0);
@@ -59,7 +58,7 @@
     </script>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic V42</div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Final Fix V43</div></div>
     <div id="canvas-container"></div>
     <div id="ui-layer">
         <div class="header-container">
@@ -101,10 +100,8 @@
         };
 
         const IDLE_THRESHOLD = 51000; 
-
-        // --- 统一的时间轴 ---
         const PHASE_SHOWCASE = 12; // 圣诞树展示
-        const PHASE_HEART = 10;    // 【合体时刻】: 照片吸入 + 粒子爱心包裹 (10秒)
+        const PHASE_HEART = 10;    // 合体时刻 (10秒)
         const PHASE_REFORM = 3;    // 变回树
 
         const santaContainer = document.getElementById('santa-container');
@@ -123,7 +120,6 @@
             }
         }
         function spawnZzz() { const z = document.createElement('div'); z.className = 'zzz-particle'; z.innerText = Math.random() > 0.5 ? 'Z' : 'z'; z.style.fontSize = (12 + Math.random() * 8) + 'px'; z.style.left = (Math.random() * 30) + 'px'; zzzContainer.appendChild(z); setTimeout(() => { z.remove(); }, 3000); }
-
         function splitTextToSpans(elementId) {
             const el = document.getElementById(elementId); const text = el.innerText; el.innerHTML = ''; 
             for (let i = 0; i < text.length; i++) {
@@ -133,7 +129,6 @@
             }
         }
         function flashOddLetters() { document.querySelectorAll('.letter-span[data-is-odd="true"]').forEach(span => { span.classList.add('gold-flash-interactive'); setTimeout(() => span.classList.remove('gold-flash-interactive'), 300); }); }
-
         const heartEl = document.getElementById('magic-heart');
         let cachedLPos = null;
         function updateLPosition() {
@@ -186,7 +181,6 @@
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            // 恢复 V37 曝光，避免照片太亮
             renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 1.0; 
             container.appendChild(renderer.domElement);
             controls = new OrbitControls(camera, renderer.domElement);
@@ -221,7 +215,7 @@
                 this.globalIndex = globalIndex;
                 this.posTree = new THREE.Vector3(); 
                 this.posScatter = new THREE.Vector3(); 
-                this.posHeart = new THREE.Vector3(); // 粒子爱心位置
+                this.posHeart = new THREE.Vector3(); 
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions(); 
                 this.isDissolving = false; 
@@ -244,15 +238,11 @@
                 this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
 
                 // 3. 粒子爱心 (包裹着中间照片)
-                // 仅用于非照片粒子组成大爱心
                 const total = CONFIG.particles.count;
                 const tHeart = (this.globalIndex / total) * Math.PI * 2;
                 let hx = 16 * Math.pow(Math.sin(tHeart), 3);
                 let hy = 13 * Math.cos(tHeart) - 5 * Math.cos(2 * tHeart) - 2 * Math.cos(3 * tHeart) - Math.cos(4 * tHeart);
-                // 扩大一点，包裹住里面的内容
-                const scale = 1.2; 
-                const fuzz = 0.8 + Math.random() * 0.4;
-                const zDepth = (Math.random() - 0.5) * 8;
+                const scale = 1.2; const fuzz = 0.8 + Math.random() * 0.4; const zDepth = (Math.random() - 0.5) * 8;
                 this.posHeart.set(hx * scale * fuzz, hy * scale * fuzz + 2, zDepth);
             }
 
@@ -277,57 +267,47 @@
                             } else { target = heartPos; }
                             this.mesh.lookAt(heartPos);
                         } else {
-                            // 还没被吸入时，保持树的位置，不要乱飞
+                            // 吸入前保持树上的位置 (修正 Q1: 吸入前不乱飞)
                             target = this.posTree; 
                         }
                     } else {
                         // 粒子：变成爱心形状
                         target = this.posHeart;
                         lerpSpeed = 1.0;
-                        this.mesh.rotation.x += this.spinSpeed.x * dt; 
-                        this.mesh.rotation.y += this.spinSpeed.y * dt;
+                        // 修正 Q3: 粒子爱心不旋转，正面展示 (抵消组旋转)
+                        this.mesh.lookAt(0, 0, 100); 
+                        this.mesh.rotation.set(0, -STATE.rotation.y, 0); 
                     }
                 }
                 else if (mode === 'SCATTER') {
-                    // 手势交互散开模式
+                    // 修正 Q2: 手势交互散开模式 (V37原版散乱)
                     if (this.type === 'PHOTO') {
                          if(this.isBoss) {
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                         } else {
-                            const totalPhotos = photoList.length; let progress = 0;
-                            if(totalPhotos > 1) {
-                                let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
-                                const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
-                            }
-                            const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                            const idealX = Math.sin(baseAngle) * baseR; const idealZ = Math.cos(baseAngle) * baseR; const idealY = baseH;
-                            target = new THREE.Vector3(idealX + this.randomOffset.x, idealY + this.randomOffset.y, idealZ + this.randomOffset.z);
-                            this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
+                            // --- 备用：丝带螺旋效果 (已注释) ---
+                            // const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
+                            // target = new THREE.Vector3(Math.sin(baseAngle)*baseR, baseH, Math.cos(baseAngle)*baseR);
+
+                            // --- 当前：V37 原版随机散乱 ---
+                            target = this.posScatter;
                         }
                     } else { target = this.posScatter; }
                 } 
                 else if (mode === 'TREE') {
-                    // === 圣诞树模式 (修复：严格回归 V37) ===
+                    // === 圣诞树模式 (修复 Q1: 严格回归 V37) ===
                     if(this.type === 'PHOTO') { 
                         if (this.isBoss) {
-                            // Boss 照片：Billboarding (永远看镜头)
+                            // Boss 照片：永远看镜头
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
-                            // 团队照片：挂在树上
-                            const totalPhotos = photoList.length; let progress = 0;
-                            if(totalPhotos > 1) {
-                                let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
-                                const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
-                            }
-                            const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                            const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
-                            const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
-                            // 注意：这里没有 randomOffset * spread，保证挂得整齐
-                            target = new THREE.Vector3(idealX, idealY + this.randomOffset.y * 0.2, idealZ);
-                            this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
+                            // 团队照片：死死钉在树上
+                            // 注意：这里用 posTree，不使用任何 randomOffset，保证整齐挂在树上
+                            target = this.posTree;
+                            this.mesh.lookAt(0, target.y, 0); this.mesh.rotation.y += Math.PI; 
                         }
                     } else { 
                         // 普通装饰粒子
@@ -340,18 +320,17 @@
                 
                 this.mesh.position.lerp(target, lerpSpeed * dt);
 
-                // --- 修复：大小控制 (严格回归) ---
+                // --- 大小控制 (严格回归) ---
                 let s = this.baseScale;
                 if (this.type === 'PHOTO') { 
                     if (mode === 'HEART_MOMENT') {
-                        // 吸入时变小 (V37逻辑)
+                        // 吸入时变小
                         const dist = this.mesh.position.length();
                         const scaleFactor = Math.min(1.0, Math.max(0.01, dist / 8.0));
                         if (STATE.autoPhaseTimer > this.absorbDelay) { s = s * 4.0 * scaleFactor; } 
-                        else { s = this.baseScale; } // 吸入前保持小尺寸
+                        else { s = 0.8; } // 吸入前保持小尺寸
                     } else if (mode === 'TREE') {
-                        // 树模式：保持挂件大小 (小)
-                        s = this.baseScale; 
+                        s = 0.8; // 树上挂件大小
                     } else {
                         // 交互散开模式 (大)
                         if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0;
@@ -391,7 +370,6 @@
             const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.2, roughness: 0.5 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 0.6, roughness: 0.3 });
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
             const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); 
-            // 修复泛白
             const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6, metalness: 0.1 }); 
             const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
