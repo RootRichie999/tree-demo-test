@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday V39 (Heart Core)</title>
+    <title>AILIA Holiday Dual-Loop V39</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -13,21 +13,22 @@
         .spinner { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 1px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 标题容器 */
         .header-container { position: absolute; top: 5%; width: 100%; text-align: center; z-index: 20; display: flex; flex-direction: column; align-items: center; }
-        .company-header { color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); letter-spacing: 6px; text-transform: uppercase; position: relative; display: inline-block; transition: all 0.3s ease; }
+        .company-header { 
+            color: #ffcc33; font-size: 28px; font-weight: bold; font-family: "Microsoft YaHei", "Heiti SC", sans-serif; 
+            text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); 
+            letter-spacing: 6px; text-transform: uppercase;
+            position: relative; display: inline-block; transition: all 0.3s ease;
+        }
         h1 { margin-top: 20px; color: #f2eada; font-size: 52px; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
 
-        /* 交互反馈 */
         .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
         .logo-flash-auto { color: #fff !important; text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; transform: scale(1.1); }
 
-        /* HTML 爱心 (UI) */
-        #magic-heart { position: fixed; top: 50%; left: 50%; width: 80px; height: 80px; transform: translate(-50%, -50%) scale(0); z-index: 30; pointer-events: none; filter: drop-shadow(0 0 15px #ff3377); transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1), left 1.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s ease-out, opacity 0.5s ease; }
-        #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
+        /* 我们去掉了HTML爱心，只保留照片组成的爱心 */
+        #magic-heart { display: none; }
 
-        /* 控制栏 */
         #controls-wrapper { position: absolute; bottom: 40px; left: 40px; z-index: 20; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
         .control-item { display: flex; align-items: center; gap: 12px; color: #d4af37; cursor: pointer; opacity: 0.7; transition: all 0.3s ease; }
         .control-item:hover { opacity: 1; transform: translateX(5px); text-shadow: 0 0 8px rgba(212, 175, 55, 0.6); }
@@ -39,7 +40,6 @@
         #boss-input, #team-input, #music-input { display: none; }
         #webcam-wrapper { position: absolute; bottom: 40px; right: 40px; width: 120px; height: 90px; opacity: 0; pointer-events: none; }
         
-        /* 圣诞老人 */
         #santa-container { position: absolute; bottom: 30px; right: 30px; z-index: 15; pointer-events: none; width: 100px; height: 100px; display: flex; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
         #santa-actor { width: 100%; height: auto; max-height: 100%; object-fit: contain; opacity: 0.9; filter: brightness(1.2) contrast(1.1); }
         #zzz-container { position: absolute; top: -20px; right: 10px; width: 40px; height: 40px; pointer-events: none; }
@@ -52,7 +52,7 @@
     </script>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading V39 Heart Core</div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Dual Magic</div></div>
     <div id="canvas-container"></div>
     
     <div id="ui-layer">
@@ -61,8 +61,7 @@
             <h1 id="header-title">Merry Christmas</h1>
         </div>
     </div>
-
-    <div id="magic-heart"></div>
+    
     <div id="santa-container"><div id="zzz-container"></div><img id="santa-actor" src="./santa_sleep.png" alt="Sleeping Santa"></div>
     
     <div id="controls-wrapper">
@@ -92,12 +91,26 @@
             rotation: { x: 0, y: 0 }, time: 0,
             lastInteractionTime: Date.now(), isAutoPlaying: false, autoLoopTimer: 0,
             autoPhase: 'IDLE',
-            wasHandDetected: false 
+            wasHandDetected: false,
+            // 新增：用于区分当前是 吸入流程(A) 还是 爱心流程(B)
+            currentRoutine: 'ABSORB_ROUTINE' // 'ABSORB_ROUTINE' or 'HEART_ROUTINE'
         };
 
-        const IDLE_THRESHOLD = 51000; 
+        // --- 最终部署设置 ---
+        const IDLE_THRESHOLD = 50000; // 50秒无操作进入自动播放
+        
+        // 流程 A 时间轴 (吸入)
+        const A_SHOWCASE = 10;
+        const A_ABSORB = 5;
+        const A_REFORM = 3;
+        
+        // 流程 B 时间轴 (爱心)
+        const B_SHOWCASE = 8;
+        const B_MORPH = 2;
+        const B_HOLD = 10; // 爱心停留久一点
+        const B_REFORM = 3;
 
-        // --- UI & Text Logic ---
+        // 圣诞老人 UI
         const santaContainer = document.getElementById('santa-container');
         const zzzContainer = document.getElementById('zzz-container');
         let zzzInterval = null;
@@ -105,7 +118,7 @@
             if (show) {
                 santaContainer.style.opacity = '1';
                 if (!zzzInterval) { zzzInterval = setInterval(spawnZzz, 1500); spawnZzz(); }
-                document.getElementById('status-indicator').innerText = "Auto Loop Mode";
+                document.getElementById('status-indicator').innerText = "Auto Loop: " + (STATE.currentRoutine === 'ABSORB_ROUTINE' ? 'Flow A' : 'Flow B');
                 document.getElementById('status-indicator').style.opacity = 1;
             } else {
                 santaContainer.style.opacity = '0';
@@ -117,42 +130,18 @@
             const z = document.createElement('div'); z.className = 'zzz-particle'; z.innerText = Math.random() > 0.5 ? 'Z' : 'z'; z.style.fontSize = (12 + Math.random() * 8) + 'px'; z.style.left = (Math.random() * 30) + 'px'; zzzContainer.appendChild(z); setTimeout(() => { z.remove(); }, 3000);
         }
 
+        // --- 文字拆分 ---
         function splitTextToSpans(elementId) {
-            const el = document.getElementById(elementId);
-            const text = el.innerText;
-            el.innerHTML = ''; 
+            const el = document.getElementById(elementId); const text = el.innerText; el.innerHTML = ''; 
             for (let i = 0; i < text.length; i++) {
-                const span = document.createElement('span');
-                span.innerText = text[i];
-                span.className = 'letter-span';
-                if (i % 2 === 0 && text[i].trim() !== '') span.dataset.isOdd = "true";
+                const span = document.createElement('span'); span.innerText = text[i]; span.className = 'letter-span';
+                if (i % 2 === 0 && text[i].trim() !== '') { span.dataset.isOdd = "true"; }
                 el.appendChild(span);
             }
         }
         function flashOddLetters() {
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
-            oddSpans.forEach(span => {
-                span.classList.add('gold-flash-interactive');
-                setTimeout(() => span.classList.remove('gold-flash-interactive'), 300);
-            });
-        }
-
-        const heartEl = document.getElementById('magic-heart');
-        let cachedLPos = null;
-        function updateLPosition() {
-            const headerEl = document.getElementById('header-company');
-            if (headerEl && headerEl.children.length > 2) {
-                const lSpan = headerEl.children[2];
-                const lRect = lSpan.getBoundingClientRect();
-                cachedLPos = { top: (lRect.bottom - 65) + 'px', left: (lRect.left + lRect.width / 2) + 'px' };
-            }
-        }
-        function moveHeart(x, y, scale, visible) {
-            if (!visible) { heartEl.style.transform = `translate(-50%, -50%) scale(0)`; heartEl.style.opacity = 0; return; }
-            heartEl.style.opacity = 1;
-            if (x === 'center') { heartEl.style.top = '50%'; heartEl.style.left = '50%'; } 
-            else if (x === 'logo') { if (cachedLPos) { heartEl.style.top = cachedLPos.top; heartEl.style.left = cachedLPos.left; } }
-            heartEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            oddSpans.forEach(span => { span.classList.add('gold-flash-interactive'); setTimeout(() => span.classList.remove('gold-flash-interactive'), 300); });
         }
 
         let scene, camera, renderer, composer, controls, mainGroup, clock = new THREE.Clock();
@@ -175,7 +164,6 @@
 
         async function init() {
             splitTextToSpans('header-company'); splitTextToSpans('header-title');
-            setTimeout(updateLPosition, 500); window.addEventListener('resize', () => { setTimeout(updateLPosition, 500); });
             initThree(); setupEnvironment(); setupLights(); createTextures();
             createParticles(); createInstancedDust(); createRealisticSnow(); createDissolveSystem();
             setupPostProcessing(); setupEvents(); 
@@ -190,7 +178,11 @@
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 2.0; 
+            
+            // --- 修复曝光关键点 1：大幅降低曝光 ---
+            renderer.toneMapping = THREE.ReinhardToneMapping; 
+            renderer.toneMappingExposure = 1.0; // V37是2.0，现在改回1.0
+            
             container.appendChild(renderer.domElement);
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.6; 
@@ -200,16 +192,20 @@
 
         function setupEnvironment() { const pmremGenerator = new THREE.PMREMGenerator(renderer); scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture; }
         function setupLights() {
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
-            const innerLight = new THREE.PointLight(0xffaa00, 2, 20); mainGroup.add(innerLight);
-            const spotGold = new THREE.SpotLight(0xffcc66, 1200); spotGold.position.set(30, 40, 40); spotGold.angle = 0.5; spotGold.penumbra = 0.5; scene.add(spotGold);
-            const spotBlue = new THREE.SpotLight(0x6688ff, 600); spotBlue.position.set(-30, 20, -30); scene.add(spotBlue);
-            const fill = new THREE.DirectionalLight(0xffeebb, 0.8); fill.position.set(0, 0, 50); scene.add(fill);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4); scene.add(ambient);
+            const innerLight = new THREE.PointLight(0xffaa00, 1.5, 20); mainGroup.add(innerLight);
+            const spotGold = new THREE.SpotLight(0xffcc66, 800); spotGold.position.set(30, 40, 40); spotGold.angle = 0.5; spotGold.penumbra = 0.5; scene.add(spotGold);
+            const spotBlue = new THREE.SpotLight(0x6688ff, 400); spotBlue.position.set(-30, 20, -30); scene.add(spotBlue);
+            const fill = new THREE.DirectionalLight(0xffeebb, 0.5); fill.position.set(0, 0, 50); scene.add(fill);
         }
         function setupPostProcessing() {
             const renderScene = new RenderPass(scene, camera); 
+            // --- 修复曝光关键点 2：降低发光（Bloom）强度 ---
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth/2, window.innerHeight/2), 1.5, 0.4, 0.85); 
-            bloomPass.threshold = 0.65; bloomPass.strength = 0.5; bloomPass.radius = 0.4; composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass);
+            bloomPass.threshold = 0.75; // 只让极亮的部分发光
+            bloomPass.strength = 0.3;   // 强度降低
+            bloomPass.radius = 0.4; 
+            composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass);
         }
         function createTextures() { const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128); ctx.fillStyle = '#880000'; ctx.beginPath(); for(let i=-128; i<256; i+=32) { ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0); } ctx.fill(); caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3); }
         function createSnowTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.5, 'rgba(255,255,255,0.5)'); gradient.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(canvas); }
@@ -218,64 +214,129 @@
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
         function createInstancedDust() { const geo = new THREE.TetrahedronGeometry(0.12, 0); const mat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.6 }); dustSystem = new THREE.InstancedMesh(geo, mat, CONFIG.particles.dustCount); const dummy = new THREE.Object3D(); const speeds = []; for (let i = 0; i < CONFIG.particles.dustCount; i++) { const r = 15 + Math.random() * 35; const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); dummy.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)); const scale = 0.5 + Math.random(); dummy.scale.set(scale, scale, scale); dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); speeds.push({ ySpeed: 0.02 + Math.random() * 0.05, initialPos: dummy.position.clone() }); } dustSystem.userData = { speeds: speeds, dummy: dummy }; mainGroup.add(dustSystem); }
 
-        // --- 核心：Particle (V39: Heart Core) ---
         class Particle {
-            constructor(mesh, type, photoIdx = -1, isBoss = false) { 
-                this.mesh = mesh; this.type = type; this.photoIdx = photoIdx; this.isBoss = isBoss; 
-                this.posTree = new THREE.Vector3(); 
-                this.posScatter = new THREE.Vector3(); 
-                this.posHeart = new THREE.Vector3(); // 爱心位置
+            constructor(mesh, type, photoIdx = -1, isBoss = false, globalIndex = 0) { 
+                this.mesh = mesh; this.type = type; this.photoIdx = photoIdx; this.isBoss = isBoss; this.globalIndex = globalIndex;
+                this.posTree = new THREE.Vector3(); this.posScatter = new THREE.Vector3(); this.posHeart = new THREE.Vector3(); // 新增爱心坐标
                 this.baseScale = mesh.scale.x; 
                 this.calculatePositions(); 
                 this.isDissolving = false; 
                 this.randomOffset = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6);
                 const speedMult = (type === 'PHOTO') ? 0.2 : 2.0; 
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
+                this.absorbDelay = Math.random() * 2.5; 
             }
+            
             calculatePositions() {
-                // 1. 树形 (V37原版逻辑)
+                // 1. 圣诞树
                 const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
                 let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
                 const angle = t * 50 * Math.PI + Math.random() * Math.PI; const r = rMax * (0.8 + Math.random() * 0.4); 
                 this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-
-                // 2. 散落 (V37原版逻辑)
+                
+                // 2. 散乱/吸入
                 let rScatter = (12 + Math.random()*20);
                 const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
                 this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
 
-                // 3. 爱心形态 (V39 Core)
+                // 3. 爱心形态 (照片在中间，装饰在外面)
                 if (this.type === 'PHOTO') {
-                    // FIX: 照片在爱心内部随机漂浮 (Cloud Effect)
-                    // 使用球体内部随机坐标，半径较小 (R=6)
-                    const u = Math.random(); const v = Math.random();
-                    const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
-                    const r = 6.0 * Math.cbrt(Math.random()); // 立方根分布，避免聚集圆心
-                    this.posHeart.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+                    // 照片排成矩阵 (Grid)
+                    // 假设大概有 10-30 张照片，我们尝试排成一个面
+                    // 不管有多少照片，我们在中心 0,0 附近排列
+                    // 为了简单，我们给它们一个固定的间距
+                    // 这里利用 photoIdx
+                    const totalPhotos = Math.max(1, photoList.length);
+                    const cols = Math.ceil(Math.sqrt(totalPhotos));
+                    const rows = Math.ceil(totalPhotos / cols);
+                    
+                    // 找到当前照片在列表中的 index (因为 constructor 里 photoIdx 可能没更新)
+                    // 实际上我们在 update 时候动态算会更准，但这里算静态目标
+                    // 为了让静态位置固定，我们简单用 globalIndex 散列一下，或者直接都放在中心让 update 处理
+                    // 策略：所有照片的目标都是 (0,0,0)，在 Update 里根据实时列表排队
+                    this.posHeart.set(0, 0, 0); 
                 } else {
-                    // 粒子组成爱心外壳 (Shell Effect)
-                    const ht = Math.random() * Math.PI * 2; 
-                    const heartScale = 1.2; 
-                    const hx = 16 * Math.pow(Math.sin(ht), 3);
-                    const hy = 13 * Math.cos(ht) - 5 * Math.cos(2*ht) - 2 * Math.cos(3*ht) - Math.cos(4*ht);
-                    const hz = (Math.random() - 0.5) * 6; 
-                    this.posHeart.set(hx * heartScale, hy * heartScale, hz * heartScale);
+                    // 装饰粒子：组成大爱心轮廓
+                    // x = 16sin^3(t)
+                    const total = CONFIG.particles.count;
+                    const tHeart = (this.globalIndex / total) * Math.PI * 2;
+                    let hx = 16 * Math.pow(Math.sin(tHeart), 3);
+                    let hy = 13 * Math.cos(tHeart) - 5 * Math.cos(2 * tHeart) - 2 * Math.cos(3 * tHeart) - Math.cos(4 * tHeart);
+                    const scale = 0.9; 
+                    const fuzz = 0.8 + Math.random() * 0.4; // 随机厚度
+                    const zDepth = (Math.random() - 0.5) * 6;
+                    this.posHeart.set(hx * scale * fuzz, hy * scale * fuzz + 2, zDepth);
                 }
             }
+
             update(dt, mode, time) {
                 if (this.isDissolving) { this.mesh.scale.lerp(new THREE.Vector3(0,0,0), 10*dt); if(this.mesh.scale.x < 0.01) this.isDissolving = false; return; }
                 
                 let target = this.posTree;
-                let lerpSpeed = 1.0;
+                let lerpSpeed = 0.8;
 
                 if (mode === 'SCATTER') {
-                    target = this.posScatter; lerpSpeed = 0.8;
-                    // V37 散落逻辑：Boss置顶，员工环绕
                     if (this.type === 'PHOTO') {
-                         if (this.isBoss) {
-                            const bossAngle = STATE.rotation.y * 0.8;
-                            target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
-                            this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
+                        // 流程A的吸入逻辑
+                        if (STATE.isAutoPlaying && STATE.currentRoutine === 'ABSORB_ROUTINE' && STATE.autoPhase === 'ABSORB') {
+                            if (STATE.autoPhaseTimer > this.absorbDelay) {
+                                const heartPos = new THREE.Vector3(0, 0, 0); 
+                                const dist = this.mesh.position.distanceTo(heartPos);
+                                if (dist > 0.5) {
+                                    const dir = heartPos.clone().sub(this.mesh.position).normalize();
+                                    const spiralForce = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(2.0); 
+                                    target = heartPos.clone().add(spiralForce); 
+                                    lerpSpeed = 2.0; 
+                                } else { target = heartPos; }
+                                this.mesh.lookAt(heartPos);
+                            } else {
+                                // 还没被吸入时，保持树的形态或散开，这里保持树的旋转
+                                // 为简单起见，复用树的逻辑但让它散一点
+                                target = this.posScatter;
+                            }
+                        } else {
+                            target = this.posScatter;
+                        }
+                    } else { target = this.posScatter; }
+                } 
+                else if (mode === 'HEART') {
+                    // 流程B的爱心逻辑
+                    if (this.type === 'PHOTO') {
+                        // 照片在中间排队
+                        // 实时计算位置
+                        const index = photoList.indexOf(this);
+                        if (index !== -1) {
+                            const total = photoList.length;
+                            const cols = Math.ceil(Math.sqrt(total));
+                            const row = Math.floor(index / cols);
+                            const col = index % cols;
+                            const spacing = 1.4;
+                            // 居中偏移
+                            const offsetX = (cols - 1) * spacing / 2;
+                            const offsetY = (Math.ceil(total/cols) - 1) * spacing / 2;
+                            
+                            target = new THREE.Vector3(
+                                col * spacing - offsetX,
+                                (Math.ceil(total/cols) - 1 - row) * spacing - offsetY + 5, // +5 提起来一点在爱心中央
+                                0
+                            );
+                            this.mesh.lookAt(0, 0, 100); // 朝前
+                        } else { target = new THREE.Vector3(0,5,0); }
+                        lerpSpeed = 1.5;
+                    } else {
+                        target = this.posHeart;
+                        this.mesh.rotation.x += this.spinSpeed.x * dt; 
+                        this.mesh.rotation.y += this.spinSpeed.y * dt;
+                        lerpSpeed = 1.0;
+                    }
+                }
+                else if (mode === 'TREE') {
+                    // TREE Mode
+                    if (this.type === 'PHOTO') {
+                        if (this.isBoss) {
+                             const bossAngle = STATE.rotation.y * 0.8;
+                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
+                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
                         } else {
                             const totalPhotos = photoList.length; let progress = 0;
                             if(totalPhotos > 1) {
@@ -283,50 +344,36 @@
                                 const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
                             const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                            const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5;
-                            const idealX = Math.sin(baseAngle) * (baseR); const idealZ = Math.cos(baseAngle) * (baseR); const idealY = baseH + waveY;
-                            const spread = 1.0;
+                            const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
+                            const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
+                            const spread = 1.0 + progress * 1.5;
                             target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
                             this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
                         }
-                    }
-                } else if (mode === 'HEART') {
-                    target = this.posHeart; lerpSpeed = 1.2;
-                    if (this.type === 'PHOTO') {
-                        // 照片漂浮动效
-                        const floatY = Math.sin(time * 0.5 + this.randomOffset.x) * 1.5;
-                        target = new THREE.Vector3(this.posHeart.x, this.posHeart.y + floatY, this.posHeart.z);
-                        // 始终面向摄像机，确保可见
-                        this.mesh.lookAt(camera.position.x, camera.position.y, camera.position.z);
-                    }
-                } else { // TREE
-                    target = this.posTree;
-                    // 树形模式下，照片面向外
-                    if (this.type === 'PHOTO') {
-                        this.mesh.lookAt(0, target.y, 0); 
-                        this.mesh.rotation.y += Math.PI;
+                    } else {
+                        target = this.posTree;
+                        this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*lerpSpeed);
+                        this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*lerpSpeed);
+                        this.mesh.rotation.y += 0.5 * dt;
                     }
                 }
                 
                 this.mesh.position.lerp(target, lerpSpeed * dt);
 
-                if (mode === 'SCATTER') {
-                    if(this.type !== 'PHOTO') { this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt; }
-                } else {
-                    if (this.type !== 'PHOTO') {
-                        this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*2);
-                        this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*2);
-                        this.mesh.rotation.y += 0.5 * dt;
-                    }
-                }
-                
                 let s = this.baseScale;
-                // 照片大小控制：散开时小一点，展示时大一点
                 if (this.type === 'PHOTO') { 
-                    if (mode === 'SCATTER') s = this.baseScale * 2.5;
-                    else if (mode === 'HEART') s = this.baseScale * 2.0; // 在心里不要太大
-                    else s = this.baseScale * 4.0; // 在树上大一点
-                    if (this.isBoss) s *= 1.5;
+                    if (mode === 'HEART') {
+                         s = this.baseScale * 4.0; // 爱心模式照片大小
+                    } else if (mode === 'SCATTER' && STATE.currentRoutine === 'ABSORB_ROUTINE' && STATE.autoPhase === 'ABSORB') {
+                        // 吸入变小
+                        const dist = this.mesh.position.length();
+                        const scaleFactor = Math.min(1.0, Math.max(0.01, dist / 8.0));
+                        if (STATE.autoPhaseTimer > this.absorbDelay) { s = s * 4.0 * scaleFactor; } 
+                        else { if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0; }
+                    } else {
+                        // Tree
+                        if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0;
+                    }
                 }
                 this.mesh.scale.lerp(new THREE.Vector3(s,s,s), lerpSpeed * 2 * dt);
             }
@@ -345,26 +392,26 @@
             for (let i = 0; i < CONFIG.particles.count; i++) {
                 const rand = Math.random(); let mesh, type;
                 if (rand < 0.35) { mesh = new THREE.Mesh(boxGeo, greenMat); type = 'BOX'; } else if (rand < 0.65) { mesh = new THREE.Mesh(boxGeo, goldMat); type = 'GOLD_BOX'; } else if (rand < 0.85) { mesh = new THREE.Mesh(sphereGeo, goldMat); type = 'GOLD_SPHERE'; } else if (rand < 0.92) { mesh = new THREE.Mesh(sphereGeo, redMat); type = 'RED'; } else if (rand < 0.96) { mesh = new THREE.Mesh(candyGeo, candyMat); type = 'CANE'; } else { mesh = new THREE.Mesh(sockGeo, Math.random()>0.5 ? redSockMat : greenSockMat); type = 'SOCK'; }
-                let s = 0.4 + Math.random() * 0.5; if(type === 'SOCK') s *= 0.8; mesh.scale.set(s,s,s); mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6); mainGroup.add(mesh); particleSystem.push(new Particle(mesh, type)); 
+                let s = 0.4 + Math.random() * 0.5; if(type === 'SOCK') s *= 0.8; mesh.scale.set(s,s,s); mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6); mainGroup.add(mesh); 
+                particleSystem.push(new Particle(mesh, type, -1, false, i)); 
             }
             mainGroup.add(photoMeshGroup);
         }
 
         function addPhotoToScene(texture, isBoss) {
-            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true; texture.colorSpace = THREE.SRGBColorSpace;
+            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true;
             const isRedFrame = !isBoss && Math.random() > 0.7; 
-            const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.4 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
+            // --- 修复曝光关键点 3：调整材质 ---
+            const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.2, roughness: 0.5 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 0.6, roughness: 0.3 });
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
-            // V38 修复的哑光材质：清晰不反光
-            const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.05, envMapIntensity: 0.2, emissive: 0x000000 }); 
-            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
+            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.4, metalness: 0.1 }); // 降低 metalness 防止全白
+            const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
             const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
             let photoIdx; if (isBoss) { photoIdx = 0; } else { photoIdx = photoList.length; }
-            const particle = new Particle(group, 'PHOTO', photoIdx, isBoss);
+            const particle = new Particle(group, 'PHOTO', photoIdx, isBoss, Math.floor(Math.random() * CONFIG.particles.count));
             if (isBoss) photoList.unshift(particle); else photoList.push(particle);
             particleSystem.push(particle);
-            photoList.forEach(p => p.calculatePositions());
         }
         
         function shuffleTeamPhotos() { if (photoList.length <= 2) return; const boss = photoList[0].isBoss ? photoList[0] : null; let team = photoList[0].isBoss ? photoList.slice(1) : [...photoList]; for (let i = team.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [team[i], team[j]] = [team[j], team[i]]; } if (boss) { photoList = [boss, ...team]; } else { photoList = team; } }
@@ -378,9 +425,8 @@
                 if (!STATE.wasHandDetected) { flashOddLetters(); STATE.wasHandDetected = true; }
                 STATE.lastInteractionTime = Date.now();
                 if(STATE.isAutoPlaying) {
-                    STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    showSleepingSanta(false); moveHeart(0, 0, 0, false);
-                    document.getElementById('header-company').classList.remove('logo-flash-auto'); 
+                    STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE'; STATE.mode = 'TREE';
+                    showSleepingSanta(false); 
                 }
                 const audio = document.getElementById('bg-music');
                 if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) { audio.play().then(() => { document.getElementById('music-status').innerText = "Sound On"; document.getElementById('music-status').style.opacity = 1; }).catch(e => {}); }
@@ -390,9 +436,14 @@
                 if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } 
                 else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
             } else { 
-                STATE.hand.detected = false; if(controls) controls.autoRotate = true; STATE.wasHandDetected = false; 
+                STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
+                STATE.wasHandDetected = false; 
                 if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
-                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE'; showSleepingSanta(true); 
+                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; 
+                    // 默认从 A 流程开始
+                    STATE.currentRoutine = 'ABSORB_ROUTINE';
+                    STATE.autoPhase = 'SHOWCASE'; 
+                    showSleepingSanta(true); 
                 }
             }
         }
@@ -405,34 +456,76 @@
             if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
             if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
 
+            // --- 核心：双循环自动播放逻辑 ---
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
                 controls.autoRotate = false;
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) { audio.pause(); document.getElementById('music-status').innerText = "Auto (Muted)"; document.getElementById('music-status').style.opacity = 0.5; }
 
-                // --- 自动播放流程 (V39 Update) ---
-                if (STATE.autoLoopTimer < 5.0) { 
-                    // 1. 散开
-                    if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
-                    STATE.rotation.y += dt * 0.3; 
-                }
-                else if (STATE.autoLoopTimer < 13.0) { 
-                    // 2. 聚合成爱心 + 照片内悬浮
-                    if(STATE.mode !== 'HEART') { STATE.mode = 'HEART'; }
-                    STATE.rotation.y += dt * 0.5; 
-                    moveHeart('center', 'center', 0, false); 
-                }
-                else if (STATE.autoLoopTimer < 21.0) { 
-                    // 3. 变回圣诞树
-                    if(STATE.mode !== 'TREE') { 
-                        STATE.mode = 'TREE'; 
-                        photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
-                    }
-                    if (STATE.autoLoopTimer > 15) moveHeart('logo', 'logo', 0.5, true); 
-                }
-                else { STATE.autoLoopTimer = 0; }
+                // 统一旋转 (稍微慢一点)
+                STATE.rotation.y += dt * 0.15; 
                 mainGroup.rotation.y = STATE.rotation.y;
+
+                // 判断当前是哪个大流程
+                if (STATE.currentRoutine === 'ABSORB_ROUTINE') {
+                    // --- 流程 A: 吸入重组 (V37原版) ---
+                    if (STATE.autoLoopTimer < A_SHOWCASE) {
+                         STATE.autoPhase = 'SHOWCASE';
+                         if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
+                    }
+                    else if (STATE.autoLoopTimer < A_SHOWCASE + A_ABSORB) {
+                         STATE.autoPhase = 'ABSORB';
+                         STATE.autoPhaseTimer = STATE.autoLoopTimer - A_SHOWCASE;
+                         // 这里不需要改 mode，mode 保持 SCATTER，但是在 Particle.update 里会检测 autoPhase=ABSORB
+                    }
+                    else if (STATE.autoLoopTimer < A_SHOWCASE + A_ABSORB + A_REFORM) {
+                         STATE.autoPhase = 'REFORM';
+                         if(STATE.mode !== 'TREE') { 
+                            STATE.mode = 'TREE'; 
+                            photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
+                         }
+                    }
+                    else {
+                        // 流程A结束 -> 切换到流程B
+                        STATE.currentRoutine = 'HEART_ROUTINE';
+                        STATE.autoLoopTimer = 0;
+                        document.getElementById('status-indicator').innerText = "Auto Loop: Flow B (Heart)";
+                    }
+                } 
+                else {
+                    // --- 流程 B: 圣诞树 -> 炸开成爱心 -> 重组 ---
+                    if (STATE.autoLoopTimer < B_SHOWCASE) {
+                        // 1. 圣诞树展示
+                        STATE.autoPhase = 'SHOWCASE';
+                        STATE.mode = 'TREE';
+                    }
+                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH) {
+                        // 2. 变形过程
+                        STATE.autoPhase = 'MORPH';
+                        STATE.mode = 'HEART'; // 切换到爱心模式
+                    }
+                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH + B_HOLD) {
+                        // 3. 保持爱心形态
+                        STATE.autoPhase = 'HOLD';
+                        STATE.mode = 'HEART';
+                    }
+                    else if (STATE.autoLoopTimer < B_SHOWCASE + B_MORPH + B_HOLD + B_REFORM) {
+                        // 4. 重组成树
+                        STATE.autoPhase = 'REFORM';
+                        if (STATE.mode !== 'TREE') {
+                            STATE.mode = 'TREE';
+                            photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
+                        }
+                    }
+                    else {
+                        // 流程B结束 -> 切换回流程A
+                        STATE.currentRoutine = 'ABSORB_ROUTINE';
+                        STATE.autoLoopTimer = 0;
+                        document.getElementById('status-indicator').innerText = "Auto Loop: Flow A (Absorb)";
+                    }
+                }
+
             } else {
                 if(controls) controls.update(); 
                 if (STATE.hand.detected) { const targetRotY = STATE.hand.x * Math.PI; STATE.rotation.y += (targetRotY - STATE.rotation.y) * 2.0 * dt; mainGroup.rotation.y = STATE.rotation.y; } else { STATE.rotation.y = mainGroup.rotation.y; }
