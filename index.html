@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AILIA Holiday Final Deployment V37</title>
+    <title>AILIA Holiday Deployment V38 (Safe Update)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -22,30 +22,29 @@
             text-shadow: 0 0 15px rgba(255, 204, 51, 0.4); 
             letter-spacing: 6px; text-transform: uppercase;
             position: relative; display: inline-block;
-            transition: all 0.3s ease; /* 干脆的过渡 */
+            transition: all 0.3s ease; 
         }
         
         /* Merry Christmas 文字 */
         h1 { margin-top: 20px; color: #f2eada; font-size: 52px; font-weight: 400; letter-spacing: 8px; font-family: 'Cinzel', serif; background: linear-gradient(to bottom, #fff, #e6dcb8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.95; text-shadow: 0 0 40px rgba(242, 234, 218, 0.5); text-transform: uppercase; }
 
-        /* 交互模式：单字闪烁 (瞬间金光，不形变) */
+        /* 交互模式：单字闪烁 */
         .letter-span { display: inline-block; transition: color 0.1s, text-shadow 0.1s; }
         .gold-flash-interactive { color: #fff !important; -webkit-text-fill-color: #fff !important; text-shadow: 0 0 10px #fff, 0 0 20px #ffd700, 0 0 40px #ffaa00 !important; }
         
-        /* 自动模式：整体闪烁 (强回应感) */
+        /* 自动模式：整体闪烁 */
         .logo-flash-auto { 
             color: #fff !important; 
             text-shadow: 0 0 30px #ff3377, 0 0 60px #ff3377, 0 0 100px #ffcc33 !important; 
             transform: scale(1.1); 
         }
 
-        /* HTML 爱心 (保证绝对可见) */
+        /* HTML 爱心 */
         #magic-heart {
             position: fixed; top: 50%; left: 50%; width: 80px; height: 80px;
             transform: translate(-50%, -50%) scale(0);
             z-index: 30; pointer-events: none;
             filter: drop-shadow(0 0 15px #ff3377);
-            /* 贝塞尔曲线，飞行轨迹优雅 */
             transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1), left 1.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s ease-out, opacity 0.5s ease;
         }
         #magic-heart::before { content: "❤"; font-size: 80px; color: #ff3377; position: absolute; top: 0; left: 0; text-shadow: 0 0 20px #ff0055; }
@@ -75,7 +74,7 @@
     </script>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic</div></div>
+    <div id="loader"><div class="spinner"></div><div class="loader-text">Loading Holiday Magic V38</div></div>
     <div id="canvas-container"></div>
     
     <div id="ui-layer">
@@ -119,17 +118,10 @@
             wasHandDetected: false 
         };
 
-        // --- ⚠️⚠️⚠️ 最终部署设置 ⚠️⚠️⚠️ ---
-        // 自动播放等待时间：3分钟 (180000ms)
-        const IDLE_THRESHOLD = 51000; 
+        // --- 最终部署设置 ---
+        const IDLE_THRESHOLD = 51000; // 51秒无操作进入自动播放
 
-        // --- 时间轴 (紧凑节奏) ---
-        const SHOWCASE_DURATION = 12;     // 1. 漂浮展示 (12s)
-        const ABSORB_DURATION = 5;        // 2. 吸入 (5s)
-        const REFORM_DURATION = 3;        // 3. 重组 (3s)
-        const TREE_HOLD_DURATION = 9;     // 4. 待机与交互 (9s) - 节奏更紧凑
-
-        // 圣诞老人 UI 逻辑
+        // --- 圣诞老人 UI 逻辑 ---
         const santaContainer = document.getElementById('santa-container');
         const zzzContainer = document.getElementById('zzz-container');
         let zzzInterval = null;
@@ -158,7 +150,6 @@
                 const span = document.createElement('span');
                 span.innerText = text[i];
                 span.className = 'letter-span';
-                // 标记单数位
                 if (i % 2 === 0 && text[i].trim() !== '') {
                     span.dataset.isOdd = "true";
                 }
@@ -166,12 +157,11 @@
             }
         }
 
-        // --- 交互闪烁 (瞬间金光) ---
         function flashOddLetters() {
             const oddSpans = document.querySelectorAll('.letter-span[data-is-odd="true"]');
             oddSpans.forEach(span => {
                 span.classList.add('gold-flash-interactive');
-                setTimeout(() => span.classList.remove('gold-flash-interactive'), 300); // 300ms 快速消退
+                setTimeout(() => span.classList.remove('gold-flash-interactive'), 300);
             });
         }
 
@@ -179,15 +169,12 @@
         const heartEl = document.getElementById('magic-heart');
         let cachedLPos = null;
 
-        // 仅在初始化和缩放时计算一次位置，根除卡顿
         function updateLPosition() {
             const headerEl = document.getElementById('header-company');
-            // AILIA 的 'L' 是第3个字符(index 2)
             if (headerEl && headerEl.children.length > 2) {
                 const lSpan = headerEl.children[2];
                 const lRect = lSpan.getBoundingClientRect();
                 cachedLPos = {
-                    // 修正：向上提 65px，尖尖对齐 L 底部
                     top: (lRect.bottom - 65) + 'px', 
                     left: (lRect.left + lRect.width / 2) + 'px'
                 };
@@ -250,7 +237,6 @@
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bg); scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.015); 
             camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 2, CONFIG.camera.z); 
-            // 优化：1.5倍分辨率，兼顾清晰度与发热控制
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 2.0; 
@@ -271,7 +257,6 @@
         }
         function setupPostProcessing() {
             const renderScene = new RenderPass(scene, camera); 
-            // 优化：降低 Bloom 分辨率，减少发热
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth/2, window.innerHeight/2), 1.5, 0.4, 0.85); 
             bloomPass.threshold = 0.65; bloomPass.strength = 0.5; bloomPass.radius = 0.4; composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass);
         }
@@ -282,62 +267,50 @@
         function triggerDissolve(position) { let count = 0; for(let i=0; i<dissolveParticles.length; i++) { if(count >= 15) break; const p = dissolveParticles[i]; if(p.life <= 0) { p.mesh.visible = true; p.mesh.position.copy(position); p.mesh.scale.setScalar(1); p.mesh.material.opacity = 1; p.life = 1.0; p.velocity.set((Math.random() - 0.5) * 2, Math.random() * 3 + 1, (Math.random() - 0.5) * 2); count++; } } }
         function createInstancedDust() { const geo = new THREE.TetrahedronGeometry(0.12, 0); const mat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.6 }); dustSystem = new THREE.InstancedMesh(geo, mat, CONFIG.particles.dustCount); const dummy = new THREE.Object3D(); const speeds = []; for (let i = 0; i < CONFIG.particles.dustCount; i++) { const r = 15 + Math.random() * 35; const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1); dummy.position.set(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)); const scale = 0.5 + Math.random(); dummy.scale.set(scale, scale, scale); dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); speeds.push({ ySpeed: 0.02 + Math.random() * 0.05, initialPos: dummy.position.clone() }); } dustSystem.userData = { speeds: speeds, dummy: dummy }; mainGroup.add(dustSystem); }
 
+        // --- 核心类：Particle (Updated for V38 Heart Morph) ---
         class Particle {
             constructor(mesh, type, photoIdx = -1, isBoss = false) { 
                 this.mesh = mesh; this.type = type; this.photoIdx = photoIdx; this.isBoss = isBoss; 
-                this.posTree = new THREE.Vector3(); this.posScatter = new THREE.Vector3(); this.baseScale = mesh.scale.x; 
-                this.calculatePositions(); this.isDissolving = false; 
+                this.posTree = new THREE.Vector3(); 
+                this.posScatter = new THREE.Vector3(); 
+                this.posHeart = new THREE.Vector3(); // 新增爱心目标位
+                this.baseScale = mesh.scale.x; 
+                this.calculatePositions(); 
+                this.isDissolving = false; 
                 this.randomOffset = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6);
                 const speedMult = (type === 'PHOTO') ? 0.2 : 2.0; 
                 this.spinSpeed = new THREE.Vector3((Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult, (Math.random()-0.5)*speedMult);
                 this.absorbDelay = Math.random() * 2.5; 
             }
             calculatePositions() {
+                // 1. 树形
                 const h = CONFIG.particles.treeHeight; const t = Math.pow(Math.random(), 0.8); const y = (t * h) - h/2;
                 let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
                 const angle = t * 50 * Math.PI + Math.random() * Math.PI; const r = rMax * (0.8 + Math.random() * 0.4); 
                 this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+                // 2. 散落
                 let rScatter = (12 + Math.random()*20);
                 const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
                 this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
+                // 3. 爱心 (V38 New)
+                const ht = Math.random() * Math.PI * 2; 
+                const heartScale = 1.2; 
+                const hx = 16 * Math.pow(Math.sin(ht), 3);
+                const hy = 13 * Math.cos(ht) - 5 * Math.cos(2*ht) - 2 * Math.cos(3*ht) - Math.cos(4*ht);
+                const hz = (Math.random() - 0.5) * 6; 
+                this.posHeart.set(hx * heartScale, hy * heartScale, hz * heartScale);
             }
             update(dt, mode, time) {
                 if (this.isDissolving) { this.mesh.scale.lerp(new THREE.Vector3(0,0,0), 10*dt); if(this.mesh.scale.x < 0.01) this.isDissolving = false; return; }
+                
                 let target = this.posTree;
-                let lerpSpeed = 0.8;
+                let lerpSpeed = 1.0;
 
                 if (mode === 'SCATTER') {
+                    target = this.posScatter; lerpSpeed = 0.8;
+                    // 照片散落时的特殊轨迹
                     if (this.type === 'PHOTO') {
-                        if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
-                            if (STATE.autoPhaseTimer > this.absorbDelay) {
-                                const heartPos = new THREE.Vector3(0, 0, 0); 
-                                const dist = this.mesh.position.distanceTo(heartPos);
-                                if (dist > 0.5) {
-                                    const dir = heartPos.clone().sub(this.mesh.position).normalize();
-                                    const spiralForce = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(2.0); 
-                                    target = heartPos.clone().add(spiralForce); 
-                                    lerpSpeed = 2.0; 
-                                } else { target = heartPos; }
-                                this.mesh.lookAt(heartPos);
-                            } else {
-                                const bossAngle = STATE.rotation.y * 0.8; 
-                                if(this.isBoss) {
-                                    target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
-                                } else {
-                                    const totalPhotos = photoList.length; let progress = 0;
-                                    if(totalPhotos > 1) {
-                                        let teamIdx = 0; for(let i=0; i<totalPhotos; i++) { if(photoList[i] === this) break; if(!photoList[i].isBoss) teamIdx++; }
-                                        const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
-                                    }
-                                    const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                                    const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
-                                    const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
-                                    const spread = 1.0 + progress * 1.5;
-                                    target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
-                                }
-                            }
-                        } 
-                        else if (this.isBoss) {
+                         if (this.isBoss) {
                             const bossAngle = STATE.rotation.y * 0.8;
                             target = new THREE.Vector3(Math.sin(bossAngle) * 6, 15.0 + Math.sin(time * 0.8) * 0.5, Math.cos(bossAngle) * 6);
                             this.mesh.lookAt(camera.position.x, this.mesh.position.y, camera.position.z);
@@ -348,38 +321,38 @@
                                 const teamTotal = totalPhotos - (photoList[0].isBoss ? 1 : 0); progress = teamIdx / (teamTotal > 1 ? teamTotal - 1 : 1);
                             }
                             const baseH = 11 - progress * 26; const baseR = 12 + progress * 18; const baseAngle = progress * Math.PI * 6 + STATE.rotation.y;
-                            const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5; const breathR = Math.sin(time * 0.8 + progress * 3.0) * 1.0;
-                            const idealX = Math.sin(baseAngle) * (baseR + breathR); const idealZ = Math.cos(baseAngle) * (baseR + breathR); const idealY = baseH + waveY;
-                            const spread = 1.0 + progress * 1.5;
+                            const waveY = Math.sin(time * 1.0 + progress * 5.0) * 1.5;
+                            const idealX = Math.sin(baseAngle) * (baseR); const idealZ = Math.cos(baseAngle) * (baseR); const idealY = baseH + waveY;
+                            const spread = 1.0;
                             target = new THREE.Vector3(idealX + this.randomOffset.x * spread, idealY + this.randomOffset.y, idealZ + this.randomOffset.z * spread);
                             this.mesh.lookAt(0, idealY, 0); this.mesh.rotation.y += Math.PI; 
                         }
-                    } else { target = this.posScatter; }
-                } 
+                    }
+                } else if (mode === 'HEART') {
+                    target = this.posHeart; lerpSpeed = 1.2;
+                    // 照片在爱心模式下稍微外扩
+                    if (this.type === 'PHOTO') {
+                        target = this.posHeart.clone().multiplyScalar(1.2);
+                        this.mesh.lookAt(0,0,0);
+                    }
+                } else { // TREE
+                    target = this.posTree;
+                }
                 
                 this.mesh.position.lerp(target, lerpSpeed * dt);
 
+                // 旋转处理
                 if (mode === 'SCATTER') {
-                    if (!(this.type === 'PHOTO' && this.isBoss) && !(STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB' && this.type === 'PHOTO')) {
-                        if (this.type === 'PHOTO') { }
-                        else { this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt; }
-                    }
-                } else if (mode === 'TREE') {
-                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*lerpSpeed);
-                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*lerpSpeed);
+                    if(this.type !== 'PHOTO') { this.mesh.rotation.x += this.spinSpeed.x * dt; this.mesh.rotation.y += this.spinSpeed.y * dt; }
+                } else {
+                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt*2);
+                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt*2);
                     if(this.type === 'PHOTO') { this.mesh.rotation.y = mainGroup.rotation.y; } else { this.mesh.rotation.y += 0.5 * dt; }
                 }
                 
                 let s = this.baseScale;
-                if (this.type === 'PHOTO' && mode === 'SCATTER') { 
-                    if (STATE.isAutoPlaying && STATE.autoPhase === 'ABSORB') {
-                        const dist = this.mesh.position.length();
-                        const scaleFactor = Math.min(1.0, Math.max(0.01, dist / 8.0));
-                        if (STATE.autoPhaseTimer > this.absorbDelay) { s = s * 4.0 * scaleFactor; } 
-                        else { if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0; }
-                    } else {
-                        if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0; 
-                    }
+                if (this.type === 'PHOTO' && mode !== 'SCATTER') { 
+                    if (this.isBoss) s = this.baseScale * 6.0; else s = this.baseScale * 4.0; 
                 }
                 this.mesh.scale.lerp(new THREE.Vector3(s,s,s), lerpSpeed * 2 * dt);
             }
@@ -403,13 +376,23 @@
             mainGroup.add(photoMeshGroup);
         }
 
+        // --- 修复：addPhotoToScene 材质调整 ---
         function addPhotoToScene(texture, isBoss) {
-            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true;
+            const maxAnisotropy = renderer.capabilities.getMaxAnisotropy(); texture.anisotropy = maxAnisotropy; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = true; texture.colorSpace = THREE.SRGBColorSpace;
             const isRedFrame = !isBoss && Math.random() > 0.7; 
             const frameMat = isRedFrame ? new THREE.MeshStandardMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.4 }) : new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
             const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05); const frame = new THREE.Mesh(frameGeo, frameMat);
-            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photoMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 }); 
-            const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
+            
+            // Fix: 使用哑光材质防止过曝
+            const photoMat = new THREE.MeshStandardMaterial({ 
+                map: texture, 
+                roughness: 0.8,       
+                metalness: 0.05,      
+                envMapIntensity: 0.2, 
+                emissive: 0x000000    
+            }); 
+
+            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2); const photo = new THREE.Mesh(photoGeo, photoMat); photo.position.z = 0.04;
             const group = new THREE.Group(); group.add(frame); group.add(photo);
             const s = 0.8; group.scale.set(s,s,s); photoMeshGroup.add(group); 
             let photoIdx; if (isBoss) { photoIdx = 0; } else { photoIdx = photoList.length; }
@@ -426,39 +409,24 @@
 
         function processGestures(result) {
             if (result.landmarks && result.landmarks.length > 0) {
-                if (!STATE.wasHandDetected) {
-                    flashOddLetters();
-                    STATE.wasHandDetected = true;
-                }
-
+                if (!STATE.wasHandDetected) { flashOddLetters(); STATE.wasHandDetected = true; }
                 STATE.lastInteractionTime = Date.now();
                 if(STATE.isAutoPlaying) {
                     STATE.isAutoPlaying = false; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    showSleepingSanta(false); 
-                    moveHeart(0, 0, 0, false);
+                    showSleepingSanta(false); moveHeart(0, 0, 0, false);
                     document.getElementById('header-company').classList.remove('logo-flash-auto'); 
                 }
                 const audio = document.getElementById('bg-music');
-                if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) {
-                    audio.play().then(() => {
-                        document.getElementById('music-status').innerText = "Sound On";
-                        document.getElementById('music-status').style.opacity = 1;
-                    }).catch(e => {});
-                }
+                if (musicPlaylist.length > 0 && audio.paused && !STATE.isAutoPlaying) { audio.play().then(() => { document.getElementById('music-status').innerText = "Sound On"; document.getElementById('music-status').style.opacity = 1; }).catch(e => {}); }
                 STATE.hand.detected = true; const lm = result.landmarks[0]; STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
                 if(controls) controls.autoRotate = false; 
                 const wrist = lm[0]; const tips = [lm[8], lm[12], lm[16], lm[20]]; let avgDist = 0; tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y)); avgDist /= 4;
-                if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { 
-                    STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); 
-                } 
+                if (avgDist > 0.4 && STATE.mode !== 'SCATTER') { STATE.lastMode = STATE.mode; STATE.mode = 'SCATTER'; shuffleTeamPhotos(); } 
                 else if (avgDist < 0.25 && STATE.mode !== 'TREE') { STATE.lastMode = STATE.mode; STATE.mode = 'TREE'; photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); }
             } else { 
-                STATE.hand.detected = false; if(controls) controls.autoRotate = true; 
-                STATE.wasHandDetected = false; 
-
+                STATE.hand.detected = false; if(controls) controls.autoRotate = true; STATE.wasHandDetected = false; 
                 if (!STATE.isAutoPlaying && (Date.now() - STATE.lastInteractionTime > IDLE_THRESHOLD)) {
-                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    showSleepingSanta(true); 
+                    STATE.isAutoPlaying = true; STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE'; showSleepingSanta(true); 
                 }
             }
         }
@@ -471,76 +439,36 @@
             if (dustSystem) { const count = dustSystem.count; const dummy = dustSystem.userData.dummy; const speeds = dustSystem.userData.speeds; for(let i=0; i<count; i++) { const info = speeds[i]; let currentY = info.initialPos.y - (time * info.ySpeed * 10) % 50; if(currentY < -20) currentY += 50; dummy.position.set(info.initialPos.x, currentY, info.initialPos.z); dummy.rotation.set(time * 0.2 + i, time * 0.1 + i, 0); dummy.scale.setScalar(dummy.scale.x); dummy.updateMatrix(); dustSystem.setMatrixAt(i, dummy.matrix); } dustSystem.instanceMatrix.needsUpdate = true; }
             if (snowSystem) { const positions = snowSystem.geometry.attributes.position.array; for(let i=0; i<CONFIG.particles.snowCount; i++) { positions[i*3+1] -= dt * 4.0; if(positions[i*3+1] < -50) positions[i*3+1] = 50; } snowSystem.geometry.attributes.position.needsUpdate = true; snowSystem.rotation.y += dt * 0.05; }
 
+            // --- Updated Auto Loop for V38 ---
             if (STATE.isAutoPlaying) {
                 STATE.autoLoopTimer += dt;
                 controls.autoRotate = false;
                 const audio = document.getElementById('bg-music');
                 if(!audio.paused) { audio.pause(); document.getElementById('music-status').innerText = "Auto (Muted)"; document.getElementById('music-status').style.opacity = 0.5; }
 
-                const autoSpeed = Math.sin(time * 0.5) * 0.2 + 0.3; 
-
-                if (STATE.autoLoopTimer < SHOWCASE_DURATION) { 
-                    STATE.autoPhase = 'SHOWCASE';
+                // Phase 1: Scatter (0-5s)
+                if (STATE.autoLoopTimer < 5.0) { 
                     if(STATE.mode !== 'SCATTER') { STATE.mode = 'SCATTER'; shuffleTeamPhotos(); }
-                    STATE.rotation.y += dt * autoSpeed; mainGroup.rotation.y = STATE.rotation.y;
-                    
-                    if (STATE.autoLoopTimer > SHOWCASE_DURATION - 3) {
-                        moveHeart('center', 'center', 1, true); 
-                    } else {
-                        moveHeart('center', 'center', 0, false);
-                    }
+                    STATE.rotation.y += dt * 0.3; 
                 }
-                else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION) { 
-                    STATE.autoPhase = 'ABSORB';
-                    STATE.autoPhaseTimer = STATE.autoLoopTimer - SHOWCASE_DURATION;
-                    const pulse = 1.0 + Math.sin(time * 10) * 0.1;
-                    moveHeart('center', 'center', pulse, true);
-                    STATE.rotation.y += dt * 0.2; mainGroup.rotation.y = STATE.rotation.y;
+                // Phase 2: Heart (5-13s)
+                else if (STATE.autoLoopTimer < 13.0) { 
+                    if(STATE.mode !== 'HEART') { STATE.mode = 'HEART'; }
+                    STATE.rotation.y += dt * 0.5; 
+                    moveHeart('center', 'center', 0, false); // Hide HTML heart
                 }
-                else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION) { 
-                    STATE.autoPhase = 'REFORM';
+                // Phase 3: Reform to Tree (13-21s)
+                else if (STATE.autoLoopTimer < 21.0) { 
                     if(STATE.mode !== 'TREE') { 
                         STATE.mode = 'TREE'; 
                         photoList.forEach(p => { triggerDissolve(p.mesh.position.clone()); p.isDissolving = true; }); 
-                        updateLPosition(); 
                     }
-                    moveHeart('logo', 'logo', 0.5, true); 
-                }
-                else if (STATE.autoLoopTimer < SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION + TREE_HOLD_DURATION) {
-                    STATE.autoPhase = 'TREE_HOLD';
-                    const holdTime = STATE.autoLoopTimer - (SHOWCASE_DURATION + ABSORB_DURATION + REFORM_DURATION);
-                    
-                    // --- 紧凑时间轴 ---
-                    // 0-4s: 静止展示 (爱心停在L下)
-                    if (holdTime < 4.0) {
-                        moveHeart('logo', 'logo', 0.5, true); 
-                        heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
-                    }
-                    // 4.0s - 4.5s: 爱心闪光 (白色强光)
-                    else if (holdTime < 4.5) {
-                        heartEl.style.filter = "drop-shadow(0 0 50px white)"; 
-                    }
-                    // 4.2s (重叠): Logo 开始闪烁 (Overlapping)
-                    if (holdTime > 4.2 && holdTime < 4.4) { 
-                         document.getElementById('header-company').classList.add('logo-flash-auto');
-                    }
-                    // 4.8s: 爱心消失
-                    if (holdTime > 4.8) {
-                        moveHeart('logo', 'logo', 0, false); 
-                    }
-                    // 5.0s: Logo 闪烁结束
-                    if (holdTime > 5.0) {
-                        document.getElementById('header-company').classList.remove('logo-flash-auto');
-                    }
-                    // 后面 4秒 留白
+                    if (STATE.autoLoopTimer > 15) moveHeart('logo', 'logo', 0.5, true); 
                 }
                 else { 
-                    // Reset
-                    document.getElementById('header-company').classList.remove('logo-flash-auto');
-                    STATE.autoLoopTimer = 0; STATE.autoPhase = 'IDLE';
-                    moveHeart('center', 'center', 0, false);
-                    heartEl.style.filter = "drop-shadow(0 0 15px #ff3377)"; 
+                    STATE.autoLoopTimer = 0; // Reset
                 }
+                mainGroup.rotation.y = STATE.rotation.y;
             } else {
                 if(controls) controls.update(); 
                 if (STATE.hand.detected) { const targetRotY = STATE.hand.x * Math.PI; STATE.rotation.y += (targetRotY - STATE.rotation.y) * 2.0 * dt; mainGroup.rotation.y = STATE.rotation.y; } else { STATE.rotation.y = mainGroup.rotation.y; }
